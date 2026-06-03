@@ -1,0 +1,82 @@
+import { useEffect } from 'react';
+import { Stack, useRouter, useSegments } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+import { useFonts } from 'expo-font';
+import {
+  SpaceGrotesk_400Regular,
+  SpaceGrotesk_600SemiBold,
+  SpaceGrotesk_700Bold,
+} from '@expo-google-fonts/space-grotesk';
+import {
+  Onest_400Regular,
+  Onest_500Medium,
+  Onest_600SemiBold,
+  Onest_700Bold,
+  Onest_800ExtraBold,
+} from '@expo-google-fonts/onest';
+import * as SplashScreen from 'expo-splash-screen';
+import { supabase } from '@/lib/supabase';
+import { useAuthStore } from '@/store/auth';
+import { useSettingsStore } from '@/store/settings';
+
+SplashScreen.preventAutoHideAsync();
+
+function AuthGuard() {
+  const { session, guestMode, loading, setSession } = useAuthStore();
+  const segments = useSegments();
+  const router = useRouter();
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (loading) return;
+    const inAuth = segments[0] === '(auth)';
+    const authed = !!session || guestMode;
+    if (!authed && !inAuth) router.replace('/(auth)' as any);
+    if (authed && inAuth) router.replace('/(tabs)/groups' as any);
+  }, [session, guestMode, loading]);
+
+  return null;
+}
+
+export default function RootLayout() {
+  const { loadSettings } = useSettingsStore();
+
+  useEffect(() => { loadSettings(); }, []);
+
+  const [fontsLoaded] = useFonts({
+    SpaceGrotesk_400Regular,
+    SpaceGrotesk_600SemiBold,
+    SpaceGrotesk_700Bold,
+    Onest_400Regular,
+    Onest_500Medium,
+    Onest_600SemiBold,
+    Onest_700Bold,
+    Onest_800ExtraBold,
+  });
+
+  useEffect(() => {
+    if (fontsLoaded) SplashScreen.hideAsync();
+  }, [fontsLoaded]);
+
+  if (!fontsLoaded) return null;
+
+  return (
+    <>
+      <StatusBar style="dark" />
+      <AuthGuard />
+      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#FAFAF8' } }}>
+        <Stack.Screen name="(auth)" />
+        <Stack.Screen name="(tabs)" />
+      </Stack>
+    </>
+  );
+}

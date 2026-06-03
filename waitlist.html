@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Qwit — Ранний доступ</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,900&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #fff;
+      color: #09090B;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Nav ── */
+    nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 28px 48px;
+    }
+
+    .logo {
+      font-size: 20px;
+      font-weight: 900;
+      letter-spacing: -0.5px;
+    }
+
+    .badge {
+      font-size: 13px;
+      font-weight: 600;
+      color: #3544E4;
+      background: #EEF0FD;
+      border-radius: 20px;
+      padding: 7px 16px;
+    }
+
+    /* ── Hero ── */
+    .hero {
+      padding: 20px 48px 0;
+    }
+
+    h1 {
+      font-size: clamp(64px, 12vw, 152px);
+      font-weight: 900;
+      font-style: italic;
+      letter-spacing: -5px;
+      line-height: 0.88;
+      color: #09090B;
+    }
+
+    h1 span { color: #3544E4; }
+
+    .subtitle {
+      font-size: 17px;
+      color: #71717A;
+      line-height: 1.65;
+      margin-top: 24px;
+      max-width: 400px;
+    }
+
+    /* ── Form section ── */
+    .form-section {
+      padding: 52px 48px 64px;
+    }
+
+    .form-title {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      margin-bottom: 6px;
+    }
+
+    .form-sub {
+      font-size: 14px;
+      color: #71717A;
+      margin-bottom: 28px;
+    }
+
+    .fields {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: flex-end;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-width: 180px;
+    }
+
+    label {
+      font-size: 13px;
+      font-weight: 600;
+      color: #09090B;
+      margin-bottom: 7px;
+    }
+
+    input[type="text"],
+    input[type="email"],
+    select {
+      height: 52px;
+      padding: 0 18px;
+      background: #F4F4F5;
+      border: 1.5px solid transparent;
+      border-radius: 12px;
+      font-family: 'Inter', sans-serif;
+      font-size: 15px;
+      color: #09090B;
+      outline: none;
+      transition: border-color 0.12s, box-shadow 0.12s, background 0.12s;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+
+    input::placeholder { color: #A1A1AA; }
+
+    input:focus, select:focus {
+      border-color: #3544E4;
+      background: #fff;
+      box-shadow: 0 0 0 3px rgba(53, 68, 228, 0.1);
+    }
+
+    .input-error {
+      border-color: #EF4444 !important;
+      box-shadow: 0 0 0 3px rgba(239,68,68,0.08) !important;
+    }
+
+    .select-wrap { position: relative; }
+    .select-wrap::after {
+      content: '';
+      position: absolute;
+      right: 16px; top: 50%;
+      transform: translateY(-50%);
+      border-left: 4px solid transparent;
+      border-right: 4px solid transparent;
+      border-top: 5px solid #71717A;
+      pointer-events: none;
+    }
+
+    .err {
+      font-size: 12px;
+      color: #EF4444;
+      margin-top: 5px;
+      min-height: 16px;
+    }
+
+    .btn {
+      height: 52px;
+      padding: 0 32px;
+      background: #3544E4;
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      font-family: 'Inter', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
+      transition: background 0.12s, transform 0.08s;
+      align-self: flex-end;
+      margin-bottom: 0;
+    }
+
+    .btn:hover { background: #2535CE; }
+    .btn:active { transform: scale(0.985); }
+    .btn:disabled { opacity: 0.5; cursor: default; transform: none; }
+
+    .note {
+      font-size: 12px;
+      color: #A1A1AA;
+      margin-top: 16px;
+    }
+
+    /* ── Success ── */
+    .success {
+      display: none;
+      align-items: center;
+      gap: 16px;
+      padding: 20px 24px;
+      background: #F0FDF4;
+      border: 1px solid #BBF7D0;
+      border-radius: 14px;
+      margin-top: 4px;
+    }
+
+    .success-icon {
+      width: 40px; height: 40px;
+      background: #16A34A;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; color: #fff; flex-shrink: 0;
+    }
+
+    .success h3 { font-size: 16px; font-weight: 700; color: #15803D; margin-bottom: 2px; }
+    .success p { font-size: 13px; color: #16A34A; }
+
+    @media (max-width: 640px) {
+      nav { padding: 22px 24px; }
+      .hero { padding: 12px 24px 0; }
+      h1 { letter-spacing: -3px; }
+      .form-section { padding: 40px 24px 56px; }
+      .fields { flex-direction: column; }
+      .btn { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <span class="logo">qwit</span>
+  <span class="badge">Ранний доступ</span>
+</nav>
+
+<div class="hero">
+  <h1>делите<br><span>траты</span><br>легко</h1>
+  <p class="subtitle">Qwit считает, кто кому должен. Переводы через СБП в один тап.</p>
+</div>
+
+<div class="form-section">
+  <div class="form-title">Получить ранний доступ</div>
+  <div class="form-sub">Пришлём ссылку в первый день запуска</div>
+
+  <div id="form-body">
+    <form id="wl-form" action="https://formspree.io/f/mvznplae" method="POST" novalidate>
+      <input type="hidden" name="_subject" value="Qwit — заявка на ранний доступ" />
+
+      <div class="fields">
+        <div class="field">
+          <label for="name">Имя</label>
+          <input type="text" id="name" name="name" placeholder="Алексей" autocomplete="given-name" />
+          <div class="err" id="err-name"></div>
+        </div>
+
+        <div class="field">
+          <label for="email">Email</label>
+          <input type="email" id="email" name="email" placeholder="alex@gmail.com" autocomplete="email" />
+          <div class="err" id="err-email"></div>
+        </div>
+
+        <div class="field">
+          <label for="source">Откуда узнал о Qwit</label>
+          <div class="select-wrap">
+            <select id="source" name="source">
+              <option value="" disabled selected>Выбери вариант</option>
+              <option>YouTube Shorts / TikTok</option>
+              <option>YouTube</option>
+              <option>Telegram</option>
+              <option>vc.ru</option>
+              <option>ВКонтакте</option>
+              <option>Instagram</option>
+              <option>От друга</option>
+              <option>Другое</option>
+            </select>
+          </div>
+          <div class="err" id="err-source"></div>
+        </div>
+
+        <button type="submit" class="btn" id="submit-btn">Хочу первым →</button>
+      </div>
+    </form>
+
+    <p class="note">Никакого спама — только одно письмо в день запуска</p>
+  </div>
+
+  <div class="success" id="success">
+    <div class="success-icon">✓</div>
+    <div>
+      <h3>Ты в списке!</h3>
+      <p>Пришлём ссылку на почту в первый день запуска</p>
+    </div>
+  </div>
+</div>
+
+<script>
+  const form = document.getElementById('wl-form');
+  const btn  = document.getElementById('submit-btn');
+
+  function setErr(id, msg) {
+    document.getElementById('err-' + id).textContent = msg;
+    document.getElementById(id).classList.toggle('input-error', !!msg);
+  }
+  function clearErrs() { ['name','email','source'].forEach(id => setErr(id, '')); }
+
+  function validate() {
+    clearErrs();
+    let ok = true;
+    const name   = document.getElementById('name').value.trim();
+    const email  = document.getElementById('email').value.trim();
+    const source = document.getElementById('source').value;
+    if (!name)  { setErr('name',  'Введи имя'); ok = false; }
+    if (!email) { setErr('email', 'Введи email'); ok = false; }
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setErr('email', 'Неверный формат'); ok = false; }
+    if (!source) { setErr('source', 'Выбери вариант'); ok = false; }
+    return ok;
+  }
+
+  form.addEventListener('submit', async e => {
+    e.preventDefault();
+    if (!validate()) return;
+    btn.disabled = true;
+    btn.textContent = 'Отправляем…';
+    try {
+      const res = await fetch(form.action, {
+        method: 'POST',
+        body: new FormData(form),
+        headers: { Accept: 'application/json' }
+      });
+      if (res.ok) {
+        document.getElementById('form-body').style.display = 'none';
+        document.getElementById('success').style.display = 'flex';
+      } else {
+        btn.disabled = false;
+        btn.textContent = 'Хочу первым →';
+        setErr('email', 'Ошибка. Попробуй ещё раз.');
+      }
+    } catch {
+      btn.disabled = false;
+      btn.textContent = 'Хочу первым →';
+      setErr('email', 'Нет соединения.');
+    }
+  });
+</script>
+
+</body>
+</html>

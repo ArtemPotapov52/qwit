@@ -1,0 +1,28 @@
+{
+  "expo": {
+    "name": "Qwit",
+    "slug": "qwit",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "qwit",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.qwit.app"
+    },
+    "android": {
+      "package": "com.qwit.app"
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-font"
+    ],
+    "experiments": {}
+  }
+}

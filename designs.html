@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Qwit — Варианты дизайна</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,900&display=swap" rel="stylesheet" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; background: #111; -webkit-font-smoothing: antialiased; }
+
+    /* ── Switcher ── */
+    .switcher {
+      position: fixed;
+      bottom: 28px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 1000;
+      display: flex;
+      gap: 6px;
+      background: rgba(0,0,0,0.75);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 50px;
+      padding: 6px;
+    }
+    .sw-btn {
+      padding: 8px 18px;
+      border-radius: 40px;
+      border: none;
+      background: transparent;
+      color: rgba(255,255,255,0.5);
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .sw-btn:hover { color: #fff; }
+    .sw-btn.active { background: #3544E4; color: #fff; }
+
+    /* ── Pages ── */
+    .page { display: none; width: 100%; min-height: 100vh; }
+    .page.active { display: flex; }
+
+    /* ═══════════════════════════════════════
+       DESIGN 1 — BILLBOARD
+       Огромный заголовок, форма снизу в одну строку
+    ═══════════════════════════════════════ */
+    #d1 {
+      background: #fff;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 36px 48px 100px;
+    }
+    #d1 .d1-nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    #d1 .d1-logo { font-size: 18px; font-weight: 900; letter-spacing: -0.5px; color: #09090B; }
+    #d1 .d1-badge {
+      font-size: 12px; font-weight: 600; color: #3544E4;
+      background: #EEF0FD; border-radius: 20px; padding: 6px 14px;
+    }
+    #d1 .d1-hero { margin-top: 40px; }
+    #d1 h1 {
+      font-size: clamp(72px, 14vw, 180px);
+      font-weight: 900;
+      font-style: italic;
+      letter-spacing: -6px;
+      line-height: 0.88;
+      color: #09090B;
+    }
+    #d1 h1 span { color: #3544E4; }
+    #d1 .d1-sub {
+      font-size: 16px; color: #71717A; margin-top: 28px; max-width: 440px; line-height: 1.6;
+    }
+    #d1 .d1-form-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 56px;
+      flex-wrap: wrap;
+    }
+    #d1 input, #d1 select {
+      height: 56px; padding: 0 20px;
+      border: 1.5px solid #E4E4E7; border-radius: 14px;
+      font-family: 'Inter', sans-serif; font-size: 15px; color: #09090B;
+      background: #fff; outline: none; flex: 1; min-width: 160px;
+      -webkit-appearance: none; appearance: none;
+    }
+    #d1 input:focus, #d1 select:focus { border-color: #3544E4; }
+    #d1 input::placeholder { color: #A1A1AA; }
+    #d1 .d1-btn {
+      height: 56px; padding: 0 32px;
+      background: #09090B; color: #fff;
+      border: none; border-radius: 14px;
+      font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 700;
+      cursor: pointer; white-space: nowrap;
+      transition: background 0.12s;
+    }
+    #d1 .d1-btn:hover { background: #3544E4; }
+
+    /* ═══════════════════════════════════════
+       DESIGN 2 — SPLIT
+       Левая половина синяя, правая белая
+    ═══════════════════════════════════════ */
+    #d2 { flex-direction: row; }
+    #d2 .d2-left {
+      width: 48%;
+      background: #3544E4;
+      display: flex; flex-direction: column;
+      justify-content: center;
+      padding: 60px 64px;
+    }
+    #d2 .d2-logo { font-size: 20px; font-weight: 900; color: rgba(255,255,255,0.9); margin-bottom: 80px; }
+    #d2 h1 {
+      font-size: clamp(40px, 5vw, 64px);
+      font-weight: 900; letter-spacing: -2.5px;
+      line-height: 1.0; color: #fff; margin-bottom: 24px;
+    }
+    #d2 .d2-desc { font-size: 16px; color: rgba(255,255,255,0.6); line-height: 1.65; max-width: 340px; margin-bottom: 48px; }
+    #d2 .d2-features { display: flex; flex-direction: column; gap: 16px; }
+    #d2 .d2-feat { display: flex; align-items: center; gap: 12px; color: rgba(255,255,255,0.75); font-size: 14px; }
+    #d2 .d2-feat-dot { width: 6px; height: 6px; background: rgba(255,255,255,0.5); border-radius: 50%; flex-shrink: 0; }
+
+    #d2 .d2-right {
+      width: 52%;
+      background: #fff;
+      display: flex; flex-direction: column;
+      justify-content: center;
+      padding: 60px 72px;
+    }
+    #d2 .d2-form-title { font-size: 26px; font-weight: 800; letter-spacing: -0.8px; margin-bottom: 8px; }
+    #d2 .d2-form-sub { font-size: 14px; color: #71717A; margin-bottom: 36px; }
+    #d2 .d2-field { margin-bottom: 16px; }
+    #d2 label { display: block; font-size: 13px; font-weight: 600; color: #09090B; margin-bottom: 7px; }
+    #d2 input[type="text"], #d2 input[type="email"], #d2 select {
+      width: 100%; height: 52px; padding: 0 18px;
+      border: 1.5px solid #E4E4E7; border-radius: 12px;
+      font-family: 'Inter', sans-serif; font-size: 15px; color: #09090B;
+      background: #FAFAFA; outline: none;
+      transition: border-color 0.12s, box-shadow 0.12s;
+      -webkit-appearance: none; appearance: none;
+    }
+    #d2 input::placeholder { color: #A1A1AA; }
+    #d2 input:focus, #d2 select:focus { border-color: #3544E4; box-shadow: 0 0 0 3px rgba(53,68,228,0.1); background: #fff; }
+    #d2 .d2-btn {
+      width: 100%; height: 54px; margin-top: 22px;
+      background: #3544E4; color: #fff;
+      border: none; border-radius: 12px;
+      font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 700;
+      cursor: pointer; transition: background 0.12s;
+    }
+    #d2 .d2-btn:hover { background: #2535CE; }
+    #d2 .d2-note { font-size: 12px; color: #A1A1AA; text-align: center; margin-top: 14px; }
+
+    /* ═══════════════════════════════════════
+       DESIGN 3 — EDITORIAL / ЖУРНАЛ
+       Асимметричный, сетка, как обложка журнала
+    ═══════════════════════════════════════ */
+    #d3 {
+      background: #F5F0E8;
+      flex-direction: column;
+      padding: 0;
+    }
+    #d3 .d3-nav {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 24px 48px;
+      border-bottom: 1.5px solid #D6CFBF;
+    }
+    #d3 .d3-logo { font-size: 18px; font-weight: 900; color: #1A1A1A; }
+    #d3 .d3-nav-right { display: flex; gap: 24px; font-size: 13px; color: #888; font-weight: 500; }
+    #d3 .d3-body {
+      display: grid; grid-template-columns: 1fr 420px;
+      flex: 1; padding: 0 48px; gap: 0;
+    }
+    #d3 .d3-left {
+      padding: 60px 60px 60px 0;
+      border-right: 1.5px solid #D6CFBF;
+      display: flex; flex-direction: column; justify-content: space-between;
+    }
+    #d3 .d3-issue { font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #888; margin-bottom: 32px; }
+    #d3 h1 {
+      font-size: clamp(52px, 7vw, 96px);
+      font-weight: 900; letter-spacing: -3.5px; line-height: 0.9;
+      color: #1A1A1A; margin-bottom: 32px;
+    }
+    #d3 .d3-pull-quote {
+      font-size: 18px; font-style: italic; color: #555; line-height: 1.6;
+      border-left: 3px solid #3544E4; padding-left: 20px; max-width: 420px;
+    }
+    #d3 .d3-tags { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 48px; }
+    #d3 .d3-tag {
+      padding: 6px 14px; background: transparent;
+      border: 1.5px solid #D6CFBF; border-radius: 20px;
+      font-size: 12px; font-weight: 600; color: #888;
+    }
+    #d3 .d3-right { padding: 60px 0 60px 52px; display: flex; flex-direction: column; justify-content: center; }
+    #d3 .d3-form-label {
+      font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+      color: #888; margin-bottom: 24px;
+    }
+    #d3 .d3-field { margin-bottom: 18px; }
+    #d3 .d3-field label { display: block; font-size: 12px; font-weight: 600; color: #555; margin-bottom: 7px; }
+    #d3 .d3-field input, #d3 .d3-field select {
+      width: 100%; height: 50px; padding: 0 16px;
+      border: none; border-bottom: 1.5px solid #C8C0B0;
+      border-radius: 0; background: transparent;
+      font-family: 'Inter', sans-serif; font-size: 15px; color: #1A1A1A;
+      outline: none; transition: border-color 0.12s;
+      -webkit-appearance: none; appearance: none;
+    }
+    #d3 input::placeholder { color: #BBB; }
+    #d3 .d3-field input:focus, #d3 .d3-field select:focus { border-color: #3544E4; }
+    #d3 .d3-btn {
+      width: 100%; height: 54px; margin-top: 28px;
+      background: #1A1A1A; color: #fff;
+      border: none; border-radius: 0;
+      font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 700;
+      letter-spacing: 0.06em; text-transform: uppercase;
+      cursor: pointer; transition: background 0.12s;
+    }
+    #d3 .d3-btn:hover { background: #3544E4; }
+
+    /* ═══════════════════════════════════════
+       DESIGN 4 — CENTERED CARD
+       Тёмный градиент, одна карточка по центру
+    ═══════════════════════════════════════ */
+    #d4 {
+      background: linear-gradient(135deg, #0D0D1A 0%, #0A0A14 50%, #0D0A1A 100%);
+      align-items: center; justify-content: center;
+      flex-direction: column;
+      padding: 80px 20px;
+      position: relative;
+      overflow: hidden;
+    }
+    #d4::before {
+      content: '';
+      position: absolute;
+      width: 700px; height: 700px;
+      background: radial-gradient(circle, rgba(53,68,228,0.2) 0%, transparent 65%);
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+    }
+    #d4 .d4-logo { font-size: 18px; font-weight: 900; color: #fff; margin-bottom: 48px; position: relative; z-index: 1; }
+    #d4 .d4-card {
+      width: 100%; max-width: 480px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 32px; padding: 52px 48px;
+      position: relative; z-index: 1;
+      backdrop-filter: blur(20px);
+    }
+    #d4 .d4-icon {
+      width: 52px; height: 52px;
+      background: #3544E4; border-radius: 16px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; margin-bottom: 28px;
+    }
+    #d4 h1 {
+      font-size: 32px; font-weight: 900; letter-spacing: -1px;
+      color: #fff; margin-bottom: 10px;
+    }
+    #d4 .d4-sub { font-size: 15px; color: rgba(255,255,255,0.45); margin-bottom: 36px; line-height: 1.6; }
+    #d4 .d4-field { margin-bottom: 14px; }
+    #d4 label { display: block; font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.4); margin-bottom: 7px; letter-spacing: 0.04em; text-transform: uppercase; }
+    #d4 input, #d4 select {
+      width: 100%; height: 50px; padding: 0 16px;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      font-family: 'Inter', sans-serif; font-size: 15px; color: #fff;
+      outline: none; transition: border-color 0.12s, background 0.12s;
+      -webkit-appearance: none; appearance: none;
+    }
+    #d4 input::placeholder { color: rgba(255,255,255,0.2); }
+    #d4 select option { background: #1A1A2E; }
+    #d4 input:focus, #d4 select:focus {
+      border-color: rgba(53,68,228,0.8);
+      background: rgba(53,68,228,0.1);
+    }
+    #d4 .d4-btn {
+      width: 100%; height: 54px; margin-top: 24px;
+      background: #3544E4; color: #fff;
+      border: none; border-radius: 14px;
+      font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 700;
+      cursor: pointer; box-shadow: 0 8px 32px rgba(53,68,228,0.4);
+      transition: background 0.12s, box-shadow 0.12s;
+    }
+    #d4 .d4-btn:hover { background: #2535CE; box-shadow: 0 8px 32px rgba(53,68,228,0.6); }
+    #d4 .d4-note { font-size: 12px; color: rgba(255,255,255,0.25); text-align: center; margin-top: 16px; }
+
+    /* ═══════════════════════════════════════
+       DESIGN 5 — МОБИЛЬНЫЙ APP-СТИЛЬ
+       Узкая колонка как экран телефона, белый
+    ═══════════════════════════════════════ */
+    #d5 {
+      background: #F2F2F7;
+      justify-content: center; align-items: center;
+      padding: 60px 20px 100px;
+    }
+    #d5 .d5-phone {
+      width: 390px;
+      background: #fff;
+      border-radius: 44px;
+      box-shadow: 0 40px 100px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.06);
+      overflow: hidden;
+    }
+    #d5 .d5-status {
+      height: 54px; background: #fff;
+      display: flex; align-items: flex-end; justify-content: space-between;
+      padding: 0 28px 10px;
+      font-size: 12px; font-weight: 600; color: #09090B;
+    }
+    #d5 .d5-content { padding: 8px 28px 40px; }
+    #d5 .d5-logo-row { display: flex; justify-content: center; margin-bottom: 28px; }
+    #d5 .d5-app-icon {
+      width: 72px; height: 72px;
+      background: #3544E4; border-radius: 20px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 28px; font-weight: 900; color: #fff;
+      font-family: 'Inter', sans-serif;
+      box-shadow: 0 8px 24px rgba(53,68,228,0.35);
+    }
+    #d5 h1 {
+      font-size: 28px; font-weight: 800; letter-spacing: -1px;
+      text-align: center; color: #09090B; margin-bottom: 8px;
+    }
+    #d5 .d5-sub { font-size: 15px; color: #8E8E93; text-align: center; line-height: 1.5; margin-bottom: 32px; }
+    #d5 .d5-field { margin-bottom: 12px; }
+    #d5 .d5-field label { display: block; font-size: 13px; font-weight: 600; color: #09090B; margin-bottom: 6px; }
+    #d5 input[type="text"], #d5 input[type="email"], #d5 select {
+      width: 100%; height: 50px; padding: 0 16px;
+      background: #F2F2F7; border: none; border-radius: 12px;
+      font-family: 'Inter', sans-serif; font-size: 15px; color: #09090B;
+      outline: none; transition: box-shadow 0.12s;
+      -webkit-appearance: none; appearance: none;
+    }
+    #d5 input::placeholder { color: #C7C7CC; }
+    #d5 input:focus, #d5 select:focus { box-shadow: 0 0 0 3px rgba(53,68,228,0.18); }
+    #d5 .d5-btn {
+      width: 100%; height: 54px; margin-top: 20px;
+      background: #3544E4; color: #fff;
+      border: none; border-radius: 14px;
+      font-family: 'Inter', sans-serif; font-size: 17px; font-weight: 700;
+      cursor: pointer;
+      transition: opacity 0.12s;
+    }
+    #d5 .d5-btn:hover { opacity: 0.88; }
+    #d5 .d5-divider {
+      display: flex; align-items: center; gap: 12px;
+      margin: 20px 0; color: #C7C7CC; font-size: 13px;
+    }
+    #d5 .d5-divider::before, #d5 .d5-divider::after {
+      content: ''; flex: 1; height: 1px; background: #E5E5EA;
+    }
+    #d5 .d5-note { font-size: 13px; color: #8E8E93; text-align: center; }
+
+    /* ═══════════════════════════════════════
+       DESIGN 6 — GRADIENT MESH
+       Яркий цветной фон, форма минимальная
+    ═══════════════════════════════════════ */
+    #d6 {
+      background: #EEF1FF;
+      position: relative; overflow: hidden;
+      flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 80px 20px 120px;
+    }
+    #d6 .mesh-1 {
+      position: absolute; width: 600px; height: 600px;
+      background: radial-gradient(circle, #C7D0FF 0%, transparent 60%);
+      top: -200px; right: -100px; pointer-events: none;
+    }
+    #d6 .mesh-2 {
+      position: absolute; width: 500px; height: 500px;
+      background: radial-gradient(circle, #E0D5FF 0%, transparent 60%);
+      bottom: -200px; left: -80px; pointer-events: none;
+    }
+    #d6 .mesh-3 {
+      position: absolute; width: 400px; height: 400px;
+      background: radial-gradient(circle, #FFD5E8 0%, transparent 60%);
+      top: 40%; left: 60%; transform: translate(-50%, -50%); pointer-events: none;
+    }
+    #d6 .d6-inner { position: relative; z-index: 1; text-align: center; max-width: 560px; }
+    #d6 .d6-logo { font-size: 20px; font-weight: 900; color: #09090B; margin-bottom: 48px; }
+    #d6 .d6-chip {
+      display: inline-block; font-size: 13px; font-weight: 600;
+      color: #3544E4; background: rgba(53,68,228,0.1);
+      border-radius: 20px; padding: 7px 16px; margin-bottom: 24px;
+    }
+    #d6 h1 {
+      font-size: clamp(44px, 8vw, 80px);
+      font-weight: 900; letter-spacing: -3px; line-height: 0.95;
+      color: #09090B; margin-bottom: 20px;
+    }
+    #d6 .d6-sub { font-size: 17px; color: #71717A; line-height: 1.6; margin-bottom: 48px; }
+    #d6 .d6-form {
+      background: #fff;
+      border-radius: 24px;
+      padding: 32px;
+      box-shadow: 0 2px 40px rgba(53,68,228,0.08), 0 0 0 1px rgba(53,68,228,0.06);
+      text-align: left;
+    }
+    #d6 .d6-row { display: flex; gap: 12px; margin-bottom: 12px; }
+    #d6 .d6-row input { flex: 1; }
+    #d6 input[type="text"], #d6 input[type="email"], #d6 select {
+      width: 100%; height: 50px; padding: 0 16px;
+      border: 1.5px solid #E4E4E7; border-radius: 12px;
+      font-family: 'Inter', sans-serif; font-size: 15px; color: #09090B;
+      background: #fff; outline: none;
+      transition: border-color 0.12s, box-shadow 0.12s;
+      -webkit-appearance: none; appearance: none;
+    }
+    #d6 input::placeholder { color: #A1A1AA; }
+    #d6 input:focus, #d6 select:focus { border-color: #3544E4; box-shadow: 0 0 0 3px rgba(53,68,228,0.08); }
+    #d6 .d6-select-wrap { position: relative; margin-bottom: 12px; }
+    #d6 .d6-select-wrap::after {
+      content: ''; position: absolute; right: 15px; top: 50%;
+      transform: translateY(-50%);
+      border-left: 4px solid transparent; border-right: 4px solid transparent;
+      border-top: 5px solid #A1A1AA; pointer-events: none;
+    }
+    #d6 .d6-btn {
+      width: 100%; height: 54px; margin-top: 4px;
+      background: #3544E4; color: #fff;
+      border: none; border-radius: 14px;
+      font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 700;
+      cursor: pointer; transition: background 0.12s;
+      box-shadow: 0 4px 20px rgba(53,68,228,0.3);
+    }
+    #d6 .d6-btn:hover { background: #2535CE; }
+    #d6 .d6-bottom { font-size: 12px; color: #A1A1AA; text-align: center; margin-top: 14px; }
+
+    /* ── Responsive global ── */
+    @media (max-width: 860px) {
+      #d2 { flex-direction: column; }
+      #d2 .d2-left, #d2 .d2-right { width: 100%; padding: 48px 32px; }
+      #d3 .d3-body { grid-template-columns: 1fr; }
+      #d3 .d3-left { border-right: none; border-bottom: 1.5px solid #D6CFBF; padding: 48px 0; }
+      #d3 .d3-right { padding: 48px 0; }
+      #d5 .d5-phone { width: 100%; max-width: 390px; border-radius: 32px; }
+      #d1 .d1-form-row { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── DESIGN 1: BILLBOARD ── -->
+<section class="page active" id="d1">
+  <div class="d1-nav">
+    <span class="d1-logo">qwit</span>
+    <span class="d1-badge">Ранний доступ</span>
+  </div>
+  <div class="d1-hero">
+    <h1>делите<br><span>траты</span><br>легко</h1>
+    <p class="d1-sub">Qwit считает, кто кому должен. Переводы через СБП в один тап.</p>
+    <form class="d1-form-row" onsubmit="return false">
+      <input type="text" placeholder="Имя" />
+      <input type="email" placeholder="Email" />
+      <select>
+        <option value="" disabled selected>Откуда узнал?</option>
+        <option>YouTube / TikTok</option>
+        <option>Telegram</option>
+        <option>От друга</option>
+        <option>vc.ru</option>
+        <option>Другое</option>
+      </select>
+      <button class="d1-btn" type="submit">Хочу доступ</button>
+    </form>
+  </div>
+</section>
+
+<!-- ── DESIGN 2: SPLIT ── -->
+<section class="page" id="d2">
+  <div class="d2-left">
+    <div class="d2-logo">qwit</div>
+    <h1>делите<br>траты<br>легко</h1>
+    <p class="d2-desc">Qwit считает, кто кому должен. Переводы через СБП прямо в приложении.</p>
+    <div class="d2-features">
+      <div class="d2-feat"><span class="d2-feat-dot"></span> Переводы через СБП в один тап</div>
+      <div class="d2-feat"><span class="d2-feat-dot"></span> Группы для любых трат</div>
+      <div class="d2-feat"><span class="d2-feat-dot"></span> Умный расчёт долгов</div>
+      <div class="d2-feat"><span class="d2-feat-dot"></span> Бесплатный тариф</div>
+    </div>
+  </div>
+  <div class="d2-right">
+    <div class="d2-form-title">Получить ранний доступ</div>
+    <div class="d2-form-sub">Пришлём ссылку в первый день запуска</div>
+    <form onsubmit="return false">
+      <div class="d2-field"><label>Имя</label><input type="text" placeholder="Алексей" /></div>
+      <div class="d2-field"><label>Email</label><input type="email" placeholder="alex@gmail.com" /></div>
+      <div class="d2-field">
+        <label>Откуда узнал о Qwit</label>
+        <select><option value="" disabled selected>Выбери вариант</option><option>YouTube / TikTok</option><option>Telegram</option><option>От друга</option><option>vc.ru</option><option>Другое</option></select>
+      </div>
+      <button class="d2-btn" type="submit">Хочу первым →</button>
+    </form>
+    <p class="d2-note">Никакого спама — только одно письмо</p>
+  </div>
+</section>
+
+<!-- ── DESIGN 3: EDITORIAL ── -->
+<section class="page" id="d3">
+  <div class="d3-nav">
+    <span class="d3-logo">qwit</span>
+    <div class="d3-nav-right">
+      <span>Продукт</span>
+      <span>О нас</span>
+      <span>Блог</span>
+    </div>
+  </div>
+  <div class="d3-body">
+    <div class="d3-left">
+      <div>
+        <p class="d3-issue">Ранний доступ · 2025</p>
+        <h1>делите<br>траты<br>легко</h1>
+        <p class="d3-pull-quote">«Qwit считает, кто кому должен. Переводы через СБП в один тап — без лишних шагов»</p>
+      </div>
+      <div class="d3-tags">
+        <span class="d3-tag">СБП-переводы</span>
+        <span class="d3-tag">Групповые расчёты</span>
+        <span class="d3-tag">iOS · Android</span>
+      </div>
+    </div>
+    <div class="d3-right">
+      <p class="d3-form-label">Записаться в лист ожидания</p>
+      <form onsubmit="return false">
+        <div class="d3-field"><label>Имя</label><input type="text" placeholder="Алексей" /></div>
+        <div class="d3-field"><label>Email</label><input type="email" placeholder="alex@gmail.com" /></div>
+        <div class="d3-field"><label>Откуда</label><select><option value="" disabled selected>Выбери вариант</option><option>YouTube / TikTok</option><option>Telegram</option><option>От друга</option><option>vc.ru</option><option>Другое</option></select></div>
+        <button class="d3-btn" type="submit">ПОЛУЧИТЬ ДОСТУП</button>
+      </form>
+    </div>
+  </div>
+</section>
+
+<!-- ── DESIGN 4: DARK CARD ── -->
+<section class="page" id="d4">
+  <div class="d4-logo">qwit</div>
+  <div class="d4-card">
+    <div class="d4-icon">💸</div>
+    <h1>Ранний доступ</h1>
+    <p class="d4-sub">Qwit — делите траты легко. Переводы через СБП в один тап. Открываем ранний доступ для первых.</p>
+    <form onsubmit="return false">
+      <div class="d4-field"><label>Имя</label><input type="text" placeholder="Алексей" /></div>
+      <div class="d4-field"><label>Email</label><input type="email" placeholder="alex@gmail.com" /></div>
+      <div class="d4-field">
+        <label>Откуда узнал</label>
+        <select><option value="" disabled selected>Выбери вариант</option><option>YouTube / TikTok</option><option>Telegram</option><option>От друга</option><option>vc.ru</option><option>Другое</option></select>
+      </div>
+      <button class="d4-btn" type="submit">Хочу первым →</button>
+    </form>
+    <p class="d4-note">Никакого спама — только одно письмо в день запуска</p>
+  </div>
+</section>
+
+<!-- ── DESIGN 5: APP STYLE ── -->
+<section class="page" id="d5">
+  <div class="d5-phone">
+    <div class="d5-status">
+      <span>9:41</span>
+      <span>●●● 🔋</span>
+    </div>
+    <div class="d5-content">
+      <div class="d5-logo-row">
+        <div class="d5-app-icon">q</div>
+      </div>
+      <h1>Ранний доступ</h1>
+      <p class="d5-sub">Qwit — делите траты с друзьями легко. Переводы через СБП прямо в чате.</p>
+      <form onsubmit="return false">
+        <div class="d5-field"><label>Имя</label><input type="text" placeholder="Алексей" /></div>
+        <div class="d5-field"><label>Email</label><input type="email" placeholder="alex@gmail.com" /></div>
+        <div class="d5-field">
+          <label>Откуда узнал</label>
+          <select><option value="" disabled selected>Выбери вариант</option><option>YouTube / TikTok</option><option>Telegram</option><option>От друга</option><option>vc.ru</option><option>Другое</option></select>
+        </div>
+        <button class="d5-btn" type="submit">Хочу первым</button>
+      </form>
+      <div class="d5-divider">или</div>
+      <p class="d5-note">Никакого спама — одно письмо в день запуска</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── DESIGN 6: GRADIENT MESH ── -->
+<section class="page" id="d6">
+  <div class="mesh-1"></div>
+  <div class="mesh-2"></div>
+  <div class="mesh-3"></div>
+  <div class="d6-inner">
+    <div class="d6-logo">qwit</div>
+    <div class="d6-chip">🟢 Открываем ранний доступ</div>
+    <h1>делите<br>траты<br>легко</h1>
+    <p class="d6-sub">Qwit считает, кто кому должен.<br>Переводы через СБП прямо в приложении.</p>
+    <div class="d6-form">
+      <form onsubmit="return false">
+        <div class="d6-row">
+          <input type="text" placeholder="Имя" />
+          <input type="email" placeholder="Email" />
+        </div>
+        <div class="d6-select-wrap">
+          <select><option value="" disabled selected>Откуда узнал о Qwit?</option><option>YouTube / TikTok</option><option>Telegram</option><option>От друга</option><option>vc.ru</option><option>Другое</option></select>
+        </div>
+        <button class="d6-btn" type="submit">Хочу первым →</button>
+      </form>
+      <p class="d6-bottom">Никакого спама — только одно письмо в день запуска</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── Switcher ── -->
+<div class="switcher">
+  <button class="sw-btn active" onclick="show('d1', this)">1 · Билборд</button>
+  <button class="sw-btn" onclick="show('d2', this)">2 · Сплит</button>
+  <button class="sw-btn" onclick="show('d3', this)">3 · Журнал</button>
+  <button class="sw-btn" onclick="show('d4', this)">4 · Тёмная</button>
+  <button class="sw-btn" onclick="show('d5', this)">5 · App</button>
+  <button class="sw-btn" onclick="show('d6', this)">6 · Градиент</button>
+</div>
+
+<script>
+  function show(id, btn) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.sw-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    btn.classList.add('active');
+  }
+</script>
+
+</body>
+</html>
