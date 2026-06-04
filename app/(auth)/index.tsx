@@ -4,10 +4,13 @@ import {
   Platform, ActivityIndicator, StyleSheet,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
-import { useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { Colors } from '@/constants/colors';
 import { Fonts } from '@/constants/fonts';
+
+// Порядок шагов:
+// login:    email → password → signIn → redirect (автоматически через AuthGuard)
+// register: email → password → name → signUp+saveProfile → redirect
 
 type Step = 'welcome' | 'email' | 'password' | 'name';
 type Mode = 'login' | 'register';
@@ -52,53 +55,51 @@ export default function AuthScreen() {
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const router = useRouter();
 
-  const reset = () => { setEmail(''); setPassword(''); setName(''); setError(''); };
+  const go = (s: Step) => { setError(''); setStep(s); };
 
-  // ── Войти: email + пароль ──────────────────────────────────
+  // ── Войти ─────────────────────────────────────────────────
   const handleLogin = async () => {
-    if (!isValidEmail(email) || password.length < 6) return;
     setError(''); setLoading(true);
     const { error: err } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
     if (err) {
-      if (err.message.includes('Invalid login')) setError('Неверный email или пароль');
-      else setError(err.message);
+      setError('Неверный email или пароль');
     }
-    // Успех → onAuthStateChange в _layout.tsx сам редиректит
+    // При успехе onAuthStateChange в _layout.tsx сам редиректит на tabs
   };
 
-  // ── Создать аккаунт: signUp → name ────────────────────────
-  const handleRegister = async () => {
-    if (!isValidEmail(email) || password.length < 6) return;
+  // ── Зарегистрировать + сохранить профиль за один раз ──────
+  const handleSignUp = async () => {
+    if (name.trim().length < 2) return;
     setError(''); setLoading(true);
-    const { error: err } = await supabase.auth.signUp({ email, password });
-    setLoading(false);
-    if (err) {
-      if (err.message.includes('already registered')) setError('Email уже зарегистрирован. Войдите.');
-      else setError(err.message);
+
+    const { data, error: signUpErr } = await supabase.auth.signUp({ email, password });
+    if (signUpErr) {
+      setLoading(false);
+      if (signUpErr.message.includes('already registered')) {
+        setError('Этот email уже зарегистрирован. Нажмите «Войти».');
+      } else {
+        setError(signUpErr.message);
+      }
       return;
     }
-    setStep('name');
-  };
 
-  // ── Сохранить имя ─────────────────────────────────────────
-  const handleNameDone = async () => {
-    if (name.trim().length < 2) return;
-    setLoading(true);
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const trimmed = name.trim();
-        await Promise.all([
-          supabase.from('profiles').upsert({ id: user.id, display_name: trimmed }, { onConflict: 'id' }),
-          supabase.auth.updateUser({ data: { display_name: trimmed } }),
-        ]);
-      }
-    } catch {}
+    // Сохраняем имя сразу — пока AuthGuard ещё не успел сделать редирект
+    const uid = data.user?.id;
+    if (uid) {
+      const trimmed = name.trim();
+      await Promise.all([
+        supabase.from('profiles').upsert(
+          { id: uid, display_name: trimmed },
+          { onConflict: 'id' }
+        ),
+        supabase.auth.updateUser({ data: { display_name: trimmed } }),
+      ]);
+    }
+
     setLoading(false);
-    router.replace('/(tabs)/groups' as any);
+    // onAuthStateChange в _layout.tsx сам редиректит — сессия уже создана signUp-ом
   };
 
   // ── Welcome ───────────────────────────────────────────────
@@ -113,18 +114,16 @@ export default function AuthScreen() {
           {'ваши\nрасходы\n'}
           <Text style={s.welcomeHeadlineAccent}>{'под\nконтролем'}</Text>
         </Text>
-        <Text style={s.welcomeBody}>
-          Делите с друзьями. Считает автоматически. Переводит через СБП.
-        </Text>
+        <Text style={s.welcomeBody}>Делите с друзьями. Считает автоматически. Переводит через СБП.</Text>
         <TouchableOpacity
-          onPress={() => { reset(); setMode('register'); setStep('email'); }}
+          onPress={() => { setEmail(''); setPassword(''); setName(''); go('email'); setMode('register'); }}
           style={[s.primaryBtn, s.primaryBtnShadow]}
           activeOpacity={0.85}
         >
           <Text style={s.primaryBtnText}>Создать аккаунт</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          onPress={() => { reset(); setMode('login'); setStep('email'); }}
+          onPress={() => { setEmail(''); setPassword(''); go('email'); setMode('login'); }}
           style={s.secondaryBtn}
           activeOpacity={0.85}
         >
@@ -138,15 +137,9 @@ export default function AuthScreen() {
   if (step === 'email') return (
     <KeyboardAvoidingView style={s.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <View style={s.stepInner}>
-        <View style={s.backRow}>
-          <BackBtn onPress={() => { setStep('welcome'); setError(''); }} />
-        </View>
-        <Text style={s.stepTitle}>
-          {mode === 'register' ? 'Ваш email' : 'Добро пожаловать'}
-        </Text>
-        <Text style={s.stepSub}>
-          {mode === 'register' ? 'Будет вашим логином' : 'Введите email для входа'}
-        </Text>
+        <View style={s.backRow}><BackBtn onPress={() => go('welcome')} /></View>
+        <Text style={s.stepTitle}>{mode === 'register' ? 'Ваш email' : 'Добро пожаловать'}</Text>
+        <Text style={s.stepSub}>{mode === 'register' ? 'Будет вашим логином' : 'Войдите по email и паролю'}</Text>
         <View style={s.inputWrap}>
           <TextInput
             style={s.textInput}
@@ -158,15 +151,11 @@ export default function AuthScreen() {
             autoCapitalize="none"
             autoComplete="email"
             autoFocus
-            onSubmitEditing={() => isValidEmail(email) && setStep('password')}
+            onSubmitEditing={() => isValidEmail(email) && go('password')}
           />
         </View>
         {error ? <Text style={s.error}>{error}</Text> : null}
-        <PrimaryBtn
-          label="Продолжить"
-          onPress={() => { setError(''); setStep('password'); }}
-          disabled={!isValidEmail(email)}
-        />
+        <PrimaryBtn label="Продолжить" onPress={() => go('password')} disabled={!isValidEmail(email)} />
       </View>
     </KeyboardAvoidingView>
   );
@@ -175,15 +164,9 @@ export default function AuthScreen() {
   if (step === 'password') return (
     <KeyboardAvoidingView style={s.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <View style={s.stepInner}>
-        <View style={s.backRow}>
-          <BackBtn onPress={() => { setStep('email'); setError(''); }} />
-        </View>
-        <Text style={s.stepTitle}>
-          {mode === 'register' ? 'Создайте пароль' : 'Введите пароль'}
-        </Text>
-        <Text style={s.stepSub}>
-          {mode === 'register' ? 'Минимум 6 символов' : email}
-        </Text>
+        <View style={s.backRow}><BackBtn onPress={() => go('email')} /></View>
+        <Text style={s.stepTitle}>{mode === 'register' ? 'Придумайте пароль' : 'Введите пароль'}</Text>
+        <Text style={s.stepSub}>{mode === 'register' ? 'Минимум 6 символов' : email}</Text>
         <View style={s.inputWrap}>
           <TextInput
             style={s.textInput}
@@ -195,44 +178,43 @@ export default function AuthScreen() {
             autoFocus
             onSubmitEditing={() => {
               if (password.length >= 6) {
-                mode === 'login' ? handleLogin() : handleRegister();
+                if (mode === 'login') handleLogin();
+                else go('name');
               }
             }}
           />
         </View>
         {error ? <Text style={s.error}>{error}</Text> : null}
-        <PrimaryBtn
-          label={mode === 'login' ? 'Войти' : 'Создать аккаунт'}
-          onPress={mode === 'login' ? handleLogin : handleRegister}
-          disabled={password.length < 6}
-          loading={loading}
-        />
+        {mode === 'login' ? (
+          <PrimaryBtn label="Войти" onPress={handleLogin} disabled={password.length < 6} loading={loading} />
+        ) : (
+          <PrimaryBtn label="Продолжить" onPress={() => go('name')} disabled={password.length < 6} />
+        )}
       </View>
     </KeyboardAvoidingView>
   );
 
-  // ── Name ──────────────────────────────────────────────────
+  // ── Name (только для регистрации) ─────────────────────────
   const validName = name.trim().length >= 2;
   return (
     <KeyboardAvoidingView style={s.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <View style={s.stepInner}>
-        <View style={s.backRow}>
-          <BackBtn onPress={() => setStep('password')} />
-        </View>
+        <View style={s.backRow}><BackBtn onPress={() => go('password')} /></View>
         <Text style={s.stepTitle}>Как вас зовут?</Text>
         <Text style={s.stepSub}>Это увидят участники ваших групп</Text>
         <View style={s.inputWrap}>
           <TextInput
             style={s.textInput}
             value={name}
-            onChangeText={setName}
+            onChangeText={v => { setName(v); setError(''); }}
             placeholder="Ваше имя"
             placeholderTextColor={Colors.faint}
             autoFocus
-            onSubmitEditing={() => validName && handleNameDone()}
+            onSubmitEditing={() => validName && handleSignUp()}
           />
         </View>
-        <PrimaryBtn label="Готово" onPress={handleNameDone} disabled={!validName} loading={loading} />
+        {error ? <Text style={s.error}>{error}</Text> : null}
+        <PrimaryBtn label="Создать аккаунт" onPress={handleSignUp} disabled={!validName} loading={loading} />
       </View>
     </KeyboardAvoidingView>
   );
@@ -240,7 +222,6 @@ export default function AuthScreen() {
 
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.page },
-
   bgLetter: {
     position: 'absolute', top: 28, left: -18,
     fontFamily: Fonts.brand700, fontSize: 320, lineHeight: 320,
@@ -279,7 +260,6 @@ const s = StyleSheet.create({
     shadowOpacity: 0.05, shadowRadius: 10, elevation: 2,
   },
   secondaryBtnText: { fontFamily: Fonts.body600, fontSize: 16, color: Colors.ink },
-
   stepInner: { flex: 1, paddingHorizontal: 24 },
   backRow: { paddingTop: 60, marginBottom: 30 },
   backBtn: {
@@ -288,15 +268,8 @@ const s = StyleSheet.create({
     shadowColor: '#101114', shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05, shadowRadius: 10, elevation: 2,
   },
-  stepTitle: {
-    fontFamily: Fonts.brand700, fontSize: 28, color: Colors.ink,
-    letterSpacing: -1.2, marginBottom: 8,
-  },
-  stepSub: {
-    fontFamily: Fonts.body400, fontSize: 14, color: Colors.sub,
-    marginBottom: 32, lineHeight: 21,
-  },
-
+  stepTitle: { fontFamily: Fonts.brand700, fontSize: 28, color: Colors.ink, letterSpacing: -1.2, marginBottom: 8 },
+  stepSub: { fontFamily: Fonts.body400, fontSize: 14, color: Colors.sub, marginBottom: 32, lineHeight: 21 },
   inputWrap: {
     backgroundColor: Colors.surface, borderRadius: 14, paddingHorizontal: 16,
     shadowColor: '#101114', shadowOffset: { width: 0, height: 2 },
@@ -304,13 +277,9 @@ const s = StyleSheet.create({
     marginBottom: 14,
   },
   textInput: { fontFamily: Fonts.body400, fontSize: 16, color: Colors.ink, paddingVertical: 16 },
-
-  primaryBtn: {
-    backgroundColor: Colors.accent, borderRadius: 16, padding: 16, alignItems: 'center',
-  },
+  primaryBtn: { backgroundColor: Colors.accent, borderRadius: 16, padding: 16, alignItems: 'center' },
   primaryBtnDisabled: { backgroundColor: Colors.accentSoft },
   primaryBtnText: { fontFamily: Fonts.body700, fontSize: 16, color: '#fff' },
   primaryBtnTextDisabled: { color: Colors.accent },
-
   error: { fontFamily: Fonts.body400, fontSize: 13, color: Colors.neg, marginBottom: 12 },
 });
