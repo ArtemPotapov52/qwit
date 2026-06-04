@@ -65,14 +65,14 @@ export default function RootLayout() {
     Onest_800ExtraBold,
   });
 
+  const darkMode = useSettingsStore(s => s.darkMode);
+  const bg = darkMode ? '#0E0F13' : '#FAFAF8';
+
   useEffect(() => {
     if (fontsLoaded) SplashScreen.hideAsync();
   }, [fontsLoaded]);
 
   if (!fontsLoaded) return null;
-
-  const darkMode = useSettingsStore(s => s.darkMode);
-  const bg = darkMode ? '#0E0F13' : '#FAFAF8';
 
   return (
     <QueryClientProvider client={queryClientRef.current}>
