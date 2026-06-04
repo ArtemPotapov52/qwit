@@ -40,7 +40,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   setDisplayName: (name) => set({ displayName: name }),
   enterGuestMode: () => set({ guestMode: true, user: DEV_USER, displayName: 'Dev', loading: false }),
   signOut: async () => {
-    await supabase.auth.signOut();
-    set({ session: null, user: null, guestMode: false, displayName: null });
+    try { await supabase.auth.signOut(); } catch {}
+    set({ session: null, user: null, guestMode: false, displayName: null, loading: false });
   },
 }));

@@ -53,8 +53,15 @@ export default function AuthScreen() {
   const { enterGuestMode } = useAuthStore();
   const router = useRouter();
 
-  const handleDevLogin = () => {
-    enterGuestMode();
+  const handleDevLogin = async () => {
+    setLoading(true);
+    const { error } = await supabase.auth.signInAnonymously();
+    setLoading(false);
+    if (error) {
+      // Anonymous auth не включён — используем локальный мок-режим
+      enterGuestMode();
+    }
+    // Если успех — onAuthStateChange в _layout.tsx сам перекинет на tabs
   };
 
   const otpRefs = [
@@ -138,8 +145,11 @@ export default function AuthScreen() {
         <TouchableOpacity onPress={() => { setMode('login'); setStep('email'); }} style={s.secondaryBtn} activeOpacity={0.85}>
           <Text style={s.secondaryBtnText}>Войти</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={handleDevLogin} style={s.skipBtn} activeOpacity={0.6}>
-          <Text style={s.skipText}>Пропустить →</Text>
+        <TouchableOpacity onPress={handleDevLogin} style={s.skipBtn} activeOpacity={0.6} disabled={loading}>
+          {loading
+            ? <ActivityIndicator color={Colors.faint} size="small" />
+            : <Text style={s.skipText}>Пропустить →</Text>
+          }
         </TouchableOpacity>
       </View>
     </View>
