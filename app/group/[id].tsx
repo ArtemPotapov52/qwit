@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useQueryClient } from '@tanstack/react-query';
 import Svg, { Path } from 'react-native-svg';
 import { Colors } from '@/constants/colors';
 import { Fonts } from '@/constants/fonts';
@@ -12,6 +13,7 @@ import { fmt } from '@/lib/format';
 import { HistoryItem } from '@/hooks/useGroupDetail';
 import { useGroupDetail, GroupMember, GroupBalance, GroupExpense } from '@/hooks/useGroupDetail';
 import { useAuthStore } from '@/store/auth';
+import { supabase } from '@/lib/supabase';
 import { AddExpenseSheet } from '@/components/ui/AddExpenseSheet';
 import { AddMemberSheet } from '@/components/ui/AddMemberSheet';
 import { GroupSettingsSheet } from '@/components/ui/GroupSettingsSheet';
@@ -40,7 +42,10 @@ function MemberChip({ m, isYou }: { m: GroupMember; isYou: boolean }) {
   );
 }
 
-function BalanceRow({ b, uid }: { b: GroupBalance; uid: string }) {
+function BalanceRow({ b, uid, groupId, onSettled }: {
+  b: GroupBalance; uid: string; groupId: string; onSettled: () => void;
+}) {
+  const [settling, setSettling] = useState(false);
   const toYou = b.to_user_id === uid;
   const fromYou = b.from_user_id === uid;
   const label = toYou
@@ -50,11 +55,31 @@ function BalanceRow({ b, uid }: { b: GroupBalance; uid: string }) {
     : `${b.from_name} → ${b.to_name}`;
   const color = toYou ? Colors.pos : fromYou ? Colors.neg : Colors.sub;
 
-  const onSbp = () =>
-    Alert.alert('Перевод через СБП', `Отметить ${fmt(b.amount)} как оплаченный?`, [
+  const onSbp = () => {
+    const desc = fromYou
+      ? `Подтвердить перевод ${fmt(b.amount, false)} → ${b.to_name}?`
+      : `Подтвердить, что ${b.from_name} перевёл вам ${fmt(b.amount, false)}?`;
+    Alert.alert('Подтвердить оплату', desc, [
       { text: 'Отмена', style: 'cancel' },
-      { text: 'Оплачено ✓', onPress: () => Alert.alert('Готово', 'Долг помечен как оплаченный') },
+      {
+        text: 'Оплачено ✓',
+        onPress: async () => {
+          setSettling(true);
+          const { error } = await supabase.rpc('settle_balance', {
+            p_group_id: groupId,
+            p_from_user: b.from_user_id,
+            p_to_user: b.to_user_id,
+          });
+          setSettling(false);
+          if (error) {
+            Alert.alert('Ошибка', error.message);
+            return;
+          }
+          onSettled();
+        },
+      },
     ]);
+  };
 
   return (
     <View style={st.balRow}>
@@ -62,8 +87,10 @@ function BalanceRow({ b, uid }: { b: GroupBalance; uid: string }) {
       <Text style={st.balLabel} numberOfLines={1}>{label}</Text>
       <Text style={[st.balAmt, { color }]}>{fmt(b.amount, false)}</Text>
       {(toYou || fromYou) && (
-        <TouchableOpacity onPress={onSbp} style={st.sbpPill} activeOpacity={0.7}>
-          <Text style={st.sbpText}>СБП</Text>
+        <TouchableOpacity onPress={onSbp} style={st.sbpPill} activeOpacity={0.7} disabled={settling}>
+          {settling
+            ? <ActivityIndicator color={Colors.accent} size="small" style={{ width: 28 }} />
+            : <Text style={st.sbpText}>СБП</Text>}
         </TouchableOpacity>
       )}
     </View>
@@ -136,8 +163,15 @@ export default function GroupDetailScreen() {
   const [memOpen, setMemOpen] = useState(false);
   const [settOpen, setSettOpen] = useState(false);
 
+  const qc = useQueryClient();
   const isLocal = (id ?? '').startsWith('local-');
   const uid = user?.id ?? '';
+
+  const handleSettled = () => {
+    qc.invalidateQueries({ queryKey: ['group', id] });
+    qc.invalidateQueries({ queryKey: ['groups', uid] });
+    qc.invalidateQueries({ queryKey: ['stats', uid] });
+  };
 
   const totalSpent = (group?.expenses ?? []).reduce((s, e) => s + e.amount, 0);
   const myBalance = (group?.balances ?? []).reduce((s, b) => {
@@ -226,7 +260,7 @@ export default function GroupDetailScreen() {
               ) : group.balances.map((b, i) => (
                 <View key={`${b.from_user_id}-${b.to_user_id}`}>
                   {i > 0 && <View style={st.divider} />}
-                  <BalanceRow b={b} uid={uid} />
+                  <BalanceRow b={b} uid={uid} groupId={id ?? ''} onSettled={handleSettled} />
                 </View>
               ))}
             </View>
