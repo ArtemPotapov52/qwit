@@ -1,11 +1,11 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, Animated,
   Modal, StyleSheet, ScrollView, Pressable, ActivityIndicator,
   KeyboardAvoidingView, Platform, Keyboard,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
-import { Colors } from '@/constants/colors';
+import { useColors, ThemeColors } from '@/constants/colors';
 import { Fonts } from '@/constants/fonts';
 import { fmt } from '@/lib/format';
 import { useAddExpense } from '@/hooks/useAddExpense';
@@ -21,6 +21,8 @@ interface Props {
 }
 
 export function AddExpenseSheet({ open, onClose, onCreated, groupId, members }: Props) {
+  const C = useColors();
+  const s = useMemo(() => makeStyles(C), [C]);
   const { user } = useAuthStore();
   const [title, setTitle] = useState('');
   const [amountStr, setAmountStr] = useState('');
@@ -168,57 +170,48 @@ export function AddExpenseSheet({ open, onClose, onCreated, groupId, members }: 
   );
 }
 
-const s = StyleSheet.create({
+const makeStyles = (C: ThemeColors) => StyleSheet.create({
   root: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'transparent' },
-  overlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(16,17,20,0.48)' },
-  sheet: { backgroundColor: Colors.page, borderTopLeftRadius: 22, borderTopRightRadius: 22, maxHeight: '92%' },
-  handle: { width: 38, height: 4, borderRadius: 999, backgroundColor: Colors.line, alignSelf: 'center', marginTop: 12 },
+  overlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(16,17,20,0.56)' },
+  sheet: { backgroundColor: C.page, borderTopLeftRadius: 22, borderTopRightRadius: 22, maxHeight: '92%' },
+  handle: { width: 38, height: 4, borderRadius: 999, backgroundColor: C.line, alignSelf: 'center', marginTop: 12 },
   inner: { padding: 20, paddingBottom: 40 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 22 },
-  title: { fontFamily: Fonts.brand700, fontSize: 22, color: Colors.ink, letterSpacing: -0.8 },
+  title: { fontFamily: Fonts.brand700, fontSize: 22, color: C.ink, letterSpacing: -0.8 },
   closeBtn: {
-    width: 32, height: 32, borderRadius: 999, backgroundColor: Colors.surface,
+    width: 32, height: 32, borderRadius: 999, backgroundColor: C.surface,
     alignItems: 'center', justifyContent: 'center',
     shadowColor: '#101114', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 2,
   },
-  label: {
-    fontFamily: Fonts.brand600, fontSize: 12, color: Colors.sub,
-    textTransform: 'lowercase', letterSpacing: -0.2, marginBottom: 10,
-  },
+  label: { fontFamily: Fonts.brand600, fontSize: 12, color: C.sub, textTransform: 'lowercase', letterSpacing: -0.2, marginBottom: 10 },
   inputWrap: {
-    backgroundColor: Colors.surface, borderRadius: 14, paddingHorizontal: 16,
+    backgroundColor: C.surface, borderRadius: 14, paddingHorizontal: 16,
     flexDirection: 'row', alignItems: 'center',
     shadowColor: '#101114', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 2,
     marginBottom: 20,
   },
-  input: { flex: 1, fontFamily: Fonts.body400, fontSize: 15, color: Colors.ink, paddingVertical: 14 },
-  currency: { fontFamily: Fonts.body600, fontSize: 16, color: Colors.sub },
-  splitHint: {
-    fontFamily: Fonts.body400, fontSize: 12.5, color: Colors.sub,
-    marginTop: -12, marginBottom: 20, marginLeft: 2,
-  },
+  input: { flex: 1, fontFamily: Fonts.body400, fontSize: 15, color: C.ink, paddingVertical: 14 },
+  currency: { fontFamily: Fonts.body600, fontSize: 16, color: C.sub },
+  splitHint: { fontFamily: Fonts.body400, fontSize: 12.5, color: C.sub, marginTop: -12, marginBottom: 20, marginLeft: 2 },
   memberPicker: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 22 },
   memberChip: {
     flexDirection: 'row', alignItems: 'center', gap: 7,
-    backgroundColor: Colors.surface, borderRadius: 999, paddingVertical: 8, paddingHorizontal: 12,
+    backgroundColor: C.surface, borderRadius: 999, paddingVertical: 8, paddingHorizontal: 12,
     shadowColor: '#101114', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 2,
   },
-  memberChipActive: { backgroundColor: Colors.accentSoft },
-  chipAvatar: {
-    width: 22, height: 22, borderRadius: 999, backgroundColor: Colors.accentSoft,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  chipAvatarActive: { backgroundColor: Colors.accent },
-  chipLetter: { fontFamily: Fonts.brand700, fontSize: 10, color: Colors.accent },
+  memberChipActive: { backgroundColor: C.accentSoft },
+  chipAvatar: { width: 22, height: 22, borderRadius: 999, backgroundColor: C.accentSoft, alignItems: 'center', justifyContent: 'center' },
+  chipAvatarActive: { backgroundColor: C.accent },
+  chipLetter: { fontFamily: Fonts.brand700, fontSize: 10, color: C.accent },
   chipLetterActive: { color: '#fff' },
-  chipName: { fontFamily: Fonts.body500, fontSize: 13, color: Colors.ink },
-  chipNameActive: { color: Colors.accent, fontFamily: Fonts.body600 },
-  error: { fontFamily: Fonts.body400, fontSize: 13, color: Colors.neg, marginBottom: 10 },
+  chipName: { fontFamily: Fonts.body500, fontSize: 13, color: C.ink },
+  chipNameActive: { color: C.accent, fontFamily: Fonts.body600 },
+  error: { fontFamily: Fonts.body400, fontSize: 13, color: C.neg, marginBottom: 10 },
   createBtn: {
-    backgroundColor: Colors.accent, borderRadius: 16, padding: 16, alignItems: 'center',
+    backgroundColor: C.accent, borderRadius: 16, padding: 16, alignItems: 'center',
     shadowColor: '#2F5BEA', shadowOffset: { width: 0, height: 14 }, shadowOpacity: 0.32, shadowRadius: 30, elevation: 10,
   },
-  createBtnDisabled: { backgroundColor: Colors.accentSoft, shadowOpacity: 0, elevation: 0 },
+  createBtnDisabled: { backgroundColor: C.accentSoft, shadowOpacity: 0, elevation: 0 },
   createBtnText: { fontFamily: Fonts.body700, fontSize: 16, color: '#fff' },
   createBtnTextDisabled: { color: Colors.accent },
 });

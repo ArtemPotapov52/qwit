@@ -71,11 +71,14 @@ export default function RootLayout() {
 
   if (!fontsLoaded) return null;
 
+  const darkMode = useSettingsStore(s => s.darkMode);
+  const bg = darkMode ? '#0E0F13' : '#FAFAF8';
+
   return (
     <QueryClientProvider client={queryClientRef.current}>
-      <StatusBar style="dark" />
+      <StatusBar style={darkMode ? 'light' : 'dark'} />
       <AuthGuard />
-      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#FAFAF8' } }}>
+      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: bg } }}>
         <Stack.Screen name="(auth)" />
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="group/[id]" />

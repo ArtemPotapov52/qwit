@@ -1,11 +1,11 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useMemo } from 'react';
 import {
   View, Text, Switch, TouchableOpacity, Animated, Modal,
   StyleSheet, Pressable, KeyboardAvoidingView, Platform, Alert, ActivityIndicator,
 } from 'react-native';
 import { useState } from 'react';
 import Svg, { Path } from 'react-native-svg';
-import { Colors } from '@/constants/colors';
+import { useColors, ThemeColors } from '@/constants/colors';
 import { Fonts } from '@/constants/fonts';
 import { useGroupSettingsStore } from '@/store/groupSettings';
 import { supabase } from '@/lib/supabase';
@@ -22,6 +22,8 @@ interface Props {
 }
 
 export function GroupSettingsSheet({ open, onClose, groupId, groupName, isAdmin, onLeft }: Props) {
+  const C = useColors();
+  const s = useMemo(() => makeStyles(C), [C]);
   const slideAnim = useRef(new Animated.Value(360)).current;
   const overlayAnim = useRef(new Animated.Value(0)).current;
   const { get, update, load, loaded } = useGroupSettingsStore();
@@ -125,7 +127,7 @@ export function GroupSettingsSheet({ open, onClose, groupId, groupName, isAdmin,
               </View>
               <TouchableOpacity onPress={onClose} style={s.closeBtn} activeOpacity={0.7}>
                 <Svg width={14} height={14} viewBox="0 0 24 24" fill="none">
-                  <Path d="M18 6 6 18M6 6l12 12" stroke={Colors.sub} strokeWidth={2.5} strokeLinecap="round"/>
+                  <Path d="M18 6 6 18M6 6l12 12" stroke={C.sub} strokeWidth={2.5} strokeLinecap="round"/>
                 </Svg>
               </TouchableOpacity>
             </View>
@@ -145,7 +147,7 @@ export function GroupSettingsSheet({ open, onClose, groupId, groupName, isAdmin,
                 <Switch
                   value={settings.notifications}
                   onValueChange={v => update(groupId, { notifications: v })}
-                  trackColor={{ true: Colors.accent, false: Colors.line }}
+                  trackColor={{ true: C.accent, false: C.line }}
                   thumbColor="#fff"
                 />
               </View>
@@ -156,13 +158,13 @@ export function GroupSettingsSheet({ open, onClose, groupId, groupName, isAdmin,
               <TouchableOpacity style={s.row} onPress={handleLeave} disabled={leaving} activeOpacity={0.7}>
                 <View style={[s.rowIcon, { backgroundColor: '#FEF0F0' }]}>
                   {leaving
-                    ? <ActivityIndicator color={Colors.neg} size="small" />
+                    ? <ActivityIndicator color={C.neg} size="small" />
                     : <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
-                        <Path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" stroke={Colors.neg} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"/>
+                        <Path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" stroke={C.neg} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"/>
                       </Svg>
                   }
                 </View>
-                <Text style={[s.rowLabel, { color: Colors.neg }]}>Покинуть группу</Text>
+                <Text style={[s.rowLabel, { color: C.neg }]}>Покинуть группу</Text>
               </TouchableOpacity>
 
               {/* Delete group — only for admin */}
@@ -172,15 +174,15 @@ export function GroupSettingsSheet({ open, onClose, groupId, groupName, isAdmin,
                   <TouchableOpacity style={s.row} onPress={handleDelete} disabled={deleting} activeOpacity={0.7}>
                     <View style={[s.rowIcon, { backgroundColor: '#FEF0F0' }]}>
                       {deleting
-                        ? <ActivityIndicator color={Colors.neg} size="small" />
+                        ? <ActivityIndicator color={C.neg} size="small" />
                         : <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
-                            <Path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" stroke={Colors.neg} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"/>
-                            <Path d="M10 11v6M14 11v6" stroke={Colors.neg} strokeWidth={1.8} strokeLinecap="round"/>
+                            <Path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" stroke={C.neg} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"/>
+                            <Path d="M10 11v6M14 11v6" stroke={C.neg} strokeWidth={1.8} strokeLinecap="round"/>
                           </Svg>
                       }
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={[s.rowLabel, { color: Colors.neg }]}>Удалить группу</Text>
+                      <Text style={[s.rowLabel, { color: C.neg }]}>Удалить группу</Text>
                       <Text style={s.rowSub}>Удалит все расходы и участников</Text>
                     </View>
                   </TouchableOpacity>
@@ -196,29 +198,29 @@ export function GroupSettingsSheet({ open, onClose, groupId, groupName, isAdmin,
   );
 }
 
-const s = StyleSheet.create({
+const makeStyles = (C: ThemeColors) => StyleSheet.create({
   root: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'transparent' },
   overlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(16,17,20,0.48)' },
-  sheet: { backgroundColor: Colors.page, borderTopLeftRadius: 22, borderTopRightRadius: 22 },
-  handle: { width: 38, height: 4, borderRadius: 999, backgroundColor: Colors.line, alignSelf: 'center', marginTop: 12 },
+  sheet: { backgroundColor: C.page, borderTopLeftRadius: 22, borderTopRightRadius: 22 },
+  handle: { width: 38, height: 4, borderRadius: 999, backgroundColor: C.line, alignSelf: 'center', marginTop: 12 },
   inner: { padding: 20, paddingBottom: 44 },
   header: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 20 },
-  title: { fontFamily: Fonts.brand700, fontSize: 22, color: Colors.ink, letterSpacing: -0.8 },
-  subtitle: { fontFamily: Fonts.body400, fontSize: 13, color: Colors.sub, marginTop: 2 },
+  title: { fontFamily: Fonts.brand700, fontSize: 22, color: C.ink, letterSpacing: -0.8 },
+  subtitle: { fontFamily: Fonts.body400, fontSize: 13, color: C.sub, marginTop: 2 },
   closeBtn: {
-    width: 32, height: 32, borderRadius: 999, backgroundColor: Colors.surface,
+    width: 32, height: 32, borderRadius: 999, backgroundColor: C.surface,
     alignItems: 'center', justifyContent: 'center',
     shadowColor: '#101114', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 2,
     marginLeft: 12,
   },
   card: {
-    backgroundColor: Colors.surface, borderRadius: 18, overflow: 'hidden',
+    backgroundColor: C.surface, borderRadius: 18, overflow: 'hidden',
     shadowColor: '#101114', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 2,
   },
   row: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 },
   rowIcon: { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  rowLabel: { fontFamily: Fonts.body500, fontSize: 14, color: Colors.ink },
-  rowSub: { fontFamily: Fonts.body400, fontSize: 12, color: Colors.sub, marginTop: 1 },
-  divider: { height: 1, backgroundColor: Colors.hairline, marginLeft: 60 },
-  footer: { fontFamily: Fonts.body400, fontSize: 11.5, color: Colors.faint, textAlign: 'center', marginTop: 16 },
+  rowLabel: { fontFamily: Fonts.body500, fontSize: 14, color: C.ink },
+  rowSub: { fontFamily: Fonts.body400, fontSize: 12, color: C.sub, marginTop: 1 },
+  divider: { height: 1, backgroundColor: C.hairline, marginLeft: 60 },
+  footer: { fontFamily: Fonts.body400, fontSize: 11.5, color: C.faint, textAlign: 'center', marginTop: 16 },
 });

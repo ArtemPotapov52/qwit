@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, ActivityIndicator,
   ScrollView, LayoutAnimation, UIManager, Platform,
@@ -6,7 +6,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import Svg, { Path } from 'react-native-svg';
-import { Colors, CAT_META } from '@/constants/colors';
+import { useColors, ThemeColors, CAT_META } from '@/constants/colors';
 import { Fonts } from '@/constants/fonts';
 import { CatIcon } from '@/components/ui/CatIcon';
 import { fmt } from '@/lib/format';
@@ -21,6 +21,8 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 }
 
 export default function GroupsScreen() {
+  const C = useColors();
+  const s = useMemo(() => makeStyles(C), [C]);
   const router = useRouter();
   const { user } = useAuthStore();
   const { fontScale } = useSettingsStore();
@@ -139,54 +141,43 @@ export default function GroupsScreen() {
   );
 }
 
-const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.page },
+const makeStyles = (C: ThemeColors) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: C.page },
   header: {
     paddingHorizontal: 18, paddingTop: 12, paddingBottom: 12,
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    backgroundColor: Colors.page,
+    backgroundColor: C.page,
   },
-  headerTitle: { fontFamily: Fonts.brand700, fontSize: 24, color: Colors.ink, letterSpacing: -1.2 },
-  avatar: {
-    width: 38, height: 38, borderRadius: 999, backgroundColor: Colors.accentSoft,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  avatarText: { fontFamily: Fonts.brand600, fontSize: 15, color: Colors.accent },
+  headerTitle: { fontFamily: Fonts.brand700, fontSize: 24, color: C.ink, letterSpacing: -1.2 },
+  avatar: { width: 38, height: 38, borderRadius: 999, backgroundColor: C.accentSoft, alignItems: 'center', justifyContent: 'center' },
+  avatarText: { fontFamily: Fonts.brand600, fontSize: 15, color: C.accent },
   scroll: { paddingHorizontal: 18, paddingBottom: 24 },
-  hero: { backgroundColor: Colors.accent, borderRadius: 18, padding: 22 },
-  heroShadow: {
-    shadowColor: '#2F5BEA', shadowOffset: { width: 0, height: 14 }, shadowOpacity: 0.32, shadowRadius: 30, elevation: 10,
-  },
-  heroLabel: {
-    fontFamily: Fonts.body600, fontSize: 12.5, color: 'rgba(255,255,255,0.82)',
-    letterSpacing: 1.2, textTransform: 'uppercase',
-  },
-  heroAmount: {
-    fontFamily: Fonts.brand700, fontSize: 40, color: '#fff', letterSpacing: -0.5,
-    marginTop: 6, lineHeight: 44,
-  },
+  hero: { backgroundColor: C.accent, borderRadius: 18, padding: 22 },
+  heroShadow: { shadowColor: '#2F5BEA', shadowOffset: { width: 0, height: 14 }, shadowOpacity: 0.32, shadowRadius: 30, elevation: 10 },
+  heroLabel: { fontFamily: Fonts.body600, fontSize: 12.5, color: 'rgba(255,255,255,0.82)', letterSpacing: 1.2, textTransform: 'uppercase' },
+  heroAmount: { fontFamily: Fonts.brand700, fontSize: 40, color: '#fff', letterSpacing: -0.5, marginTop: 6, lineHeight: 44 },
   heroRow: { flexDirection: 'row', marginTop: 18 },
   heroCol: { flex: 1 },
   heroColLabel: { fontFamily: Fonts.body400, fontSize: 11.5, color: 'rgba(255,255,255,0.82)', marginBottom: 4 },
   heroColNum: { fontFamily: Fonts.body700, fontSize: 17, color: '#fff' },
   sectionHeader: { marginTop: 22, marginBottom: 12 },
-  sectionTitle: { fontFamily: Fonts.brand700, fontSize: 18, color: Colors.ink, letterSpacing: -0.9, textTransform: 'lowercase' },
+  sectionTitle: { fontFamily: Fonts.brand700, fontSize: 18, color: C.ink, letterSpacing: -0.9, textTransform: 'lowercase' },
   center: { paddingTop: 40, alignItems: 'center' },
   empty: { paddingTop: 40, alignItems: 'center', paddingHorizontal: 24 },
-  emptyText: { fontFamily: Fonts.body400, fontSize: 14, color: Colors.sub, textAlign: 'center', lineHeight: 22 },
+  emptyText: { fontFamily: Fonts.body400, fontSize: 14, color: C.sub, textAlign: 'center', lineHeight: 22 },
   list: { gap: 10 },
   card: {
     flexDirection: 'row', alignItems: 'center', gap: 12, padding: 13,
-    backgroundColor: Colors.surface, borderRadius: 18,
+    backgroundColor: C.surface, borderRadius: 18,
     shadowColor: '#101114', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 2,
   },
   catTile: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   cardInfo: { flex: 1, minWidth: 0, marginRight: 4 },
   cardNameRow: { flexDirection: 'row', alignItems: 'center' },
-  cardName: { fontFamily: Fonts.body500, fontSize: 15, color: Colors.ink, letterSpacing: -0.2, textTransform: 'lowercase', flexShrink: 1 },
-  cardLast: { fontFamily: Fonts.body400, fontSize: 12, color: Colors.sub, marginTop: 3 },
+  cardName: { fontFamily: Fonts.body500, fontSize: 15, color: C.ink, letterSpacing: -0.2, textTransform: 'lowercase', flexShrink: 1 },
+  cardLast: { fontFamily: Fonts.body400, fontSize: 12, color: C.sub, marginTop: 3 },
   amtCol: { alignItems: 'flex-end' },
   amtNum: { fontFamily: Fonts.body700, fontSize: 16, letterSpacing: -0.2 },
-  amtLabel: { fontFamily: Fonts.body400, fontSize: 11, color: Colors.sub, marginTop: 2 },
+  amtLabel: { fontFamily: Fonts.body400, fontSize: 11, color: C.sub, marginTop: 2 },
   pinBtn: { padding: 4, marginLeft: 4 },
 });

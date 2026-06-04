@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity,
   ActivityIndicator, StyleSheet, Alert,
@@ -7,7 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import Svg, { Path } from 'react-native-svg';
-import { Colors } from '@/constants/colors';
+import { useColors, ThemeColors } from '@/constants/colors';
 import { Fonts } from '@/constants/fonts';
 import { fmt } from '@/lib/format';
 import { HistoryItem } from '@/hooks/useGroupDetail';
@@ -53,7 +53,7 @@ function BalanceRow({ b, uid, groupId, onSettled }: {
     : fromYou
     ? `вы должны ${b.to_name}`
     : `${b.from_name} → ${b.to_name}`;
-  const color = toYou ? Colors.pos : fromYou ? Colors.neg : Colors.sub;
+  const color = toYou ? C.pos : fromYou ? C.neg : C.sub;
 
   const onSbp = () => {
     const desc = fromYou
@@ -89,7 +89,7 @@ function BalanceRow({ b, uid, groupId, onSettled }: {
       {(toYou || fromYou) && (
         <TouchableOpacity onPress={onSbp} style={st.sbpPill} activeOpacity={0.7} disabled={settling}>
           {settling
-            ? <ActivityIndicator color={Colors.accent} size="small" style={{ width: 28 }} />
+            ? <ActivityIndicator color={C.accent} size="small" style={{ width: 28 }} />
             : <Text style={st.sbpText}>СБП</Text>}
         </TouchableOpacity>
       )}
@@ -162,6 +162,8 @@ function ExpenseRow({ e }: { e: GroupExpense }) {
 }
 
 export default function GroupDetailScreen() {
+  const C = useColors();
+  const st = useMemo(() => makeStyles(C), [C]);
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { user } = useAuthStore();
@@ -193,7 +195,7 @@ export default function GroupDetailScreen() {
       <View style={st.header}>
         <TouchableOpacity onPress={() => router.back()} style={st.iconBtn} activeOpacity={0.7}>
           <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
-            <Path d="M15 6l-6 6 6 6" stroke={Colors.ink} strokeWidth={2.2}
+            <Path d="M15 6l-6 6 6 6" stroke={C.ink} strokeWidth={2.2}
               strokeLinecap="round" strokeLinejoin="round"/>
           </Svg>
         </TouchableOpacity>
@@ -204,13 +206,13 @@ export default function GroupDetailScreen() {
           <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
             <Path
               d="M12 13a1 1 0 1 0 0-2 1 1 0 0 0 0 2zM19 13a1 1 0 1 0 0-2 1 1 0 0 0 0 2zM5 13a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"
-              fill={Colors.sub} stroke={Colors.sub} strokeWidth={0.5}/>
+              fill={C.sub} stroke={C.sub} strokeWidth={0.5}/>
           </Svg>
         </TouchableOpacity>
       </View>
 
       {isLoading ? (
-        <View style={st.center}><ActivityIndicator color={Colors.accent} /></View>
+        <View style={st.center}><ActivityIndicator color={C.accent} /></View>
       ) : error ? (
         <View style={st.center}>
           <Text style={st.errText}>Не удалось загрузить группу</Text>
@@ -247,7 +249,7 @@ export default function GroupDetailScreen() {
               {!isLocal && (
                 <TouchableOpacity onPress={() => setMemOpen(true)} style={st.addLink} activeOpacity={0.7}>
                   <Svg width={12} height={12} viewBox="0 0 20 20">
-                    <Path d="M10 4v12M4 10h12" stroke={Colors.accent} strokeWidth={2.4} strokeLinecap="round"/>
+                    <Path d="M10 4v12M4 10h12" stroke={C.accent} strokeWidth={2.4} strokeLinecap="round"/>
                   </Svg>
                   <Text style={st.addLinkText}>добавить</Text>
                 </TouchableOpacity>
@@ -338,31 +340,31 @@ export default function GroupDetailScreen() {
   );
 }
 
-const st = StyleSheet.create({
-  page: { flex: 1, backgroundColor: Colors.page },
+const makeStyles = (C: ThemeColors) => StyleSheet.create({
+  page: { flex: 1, backgroundColor: C.page },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 18, paddingTop: 12, paddingBottom: 12,
-    backgroundColor: Colors.page,
+    backgroundColor: C.page,
   },
   iconBtn: {
-    width: 38, height: 38, borderRadius: 999, backgroundColor: Colors.surface,
+    width: 38, height: 38, borderRadius: 999, backgroundColor: C.surface,
     alignItems: 'center', justifyContent: 'center',
     shadowColor: '#101114', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 2,
   },
   headerTitle: {
-    fontFamily: Fonts.brand700, fontSize: 18, color: Colors.ink,
+    fontFamily: Fonts.brand700, fontSize: 18, color: C.ink,
     letterSpacing: -0.7, flex: 1, textAlign: 'center', marginHorizontal: 8,
   },
   scroll: { paddingHorizontal: 18, paddingBottom: 100 }, // отступ под FAB
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 14 },
-  errText: { fontFamily: Fonts.body400, fontSize: 14, color: Colors.neg },
-  retryBtn: { paddingHorizontal: 24, paddingVertical: 10, borderRadius: 12, backgroundColor: Colors.surface },
-  retryText: { fontFamily: Fonts.body600, fontSize: 14, color: Colors.sub },
+  errText: { fontFamily: Fonts.body400, fontSize: 14, color: C.neg },
+  retryBtn: { paddingHorizontal: 24, paddingVertical: 10, borderRadius: 12, backgroundColor: C.surface },
+  retryText: { fontFamily: Fonts.body600, fontSize: 14, color: C.sub },
 
   // ── Hero ──
   hero: {
-    backgroundColor: Colors.accent, borderRadius: 18, padding: 20, marginBottom: 24,
+    backgroundColor: C.accent, borderRadius: 18, padding: 20, marginBottom: 24,
   },
   heroShadow: {
     shadowColor: '#2F5BEA', shadowOffset: { width: 0, height: 14 },
@@ -385,68 +387,68 @@ const st = StyleSheet.create({
 
   // ── Sections ──
   sectionRow: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 12 },
-  sectionTitle: { fontFamily: Fonts.brand700, fontSize: 18, color: Colors.ink, letterSpacing: -0.9, textTransform: 'lowercase' },
+  sectionTitle: { fontFamily: Fonts.brand700, fontSize: 18, color: C.ink, letterSpacing: -0.9, textTransform: 'lowercase' },
   addLink: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  addLinkText: { fontFamily: Fonts.body600, fontSize: 13.5, color: Colors.accent },
+  addLinkText: { fontFamily: Fonts.body600, fontSize: 13.5, color: C.accent },
 
   // ── Chips ──
   chips: { gap: 8, paddingBottom: 22 },
   chip: {
     flexDirection: 'row', alignItems: 'center', gap: 7,
-    backgroundColor: Colors.surface, borderRadius: 999, paddingVertical: 8, paddingHorizontal: 12,
+    backgroundColor: C.surface, borderRadius: 999, paddingVertical: 8, paddingHorizontal: 12,
     shadowColor: '#101114', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 2,
   },
-  chipYou: { backgroundColor: Colors.accentSoft },
-  chipAv: { width: 24, height: 24, borderRadius: 999, backgroundColor: Colors.accentSoft, alignItems: 'center', justifyContent: 'center' },
-  chipAvYou: { backgroundColor: Colors.accent },
-  chipLtr: { fontFamily: Fonts.brand700, fontSize: 11, color: Colors.accent },
+  chipYou: { backgroundColor: C.accentSoft },
+  chipAv: { width: 24, height: 24, borderRadius: 999, backgroundColor: C.accentSoft, alignItems: 'center', justifyContent: 'center' },
+  chipAvYou: { backgroundColor: C.accent },
+  chipLtr: { fontFamily: Fonts.brand700, fontSize: 11, color: C.accent },
   chipLtrYou: { color: '#fff' },
-  chipName: { fontFamily: Fonts.body500, fontSize: 13, color: Colors.ink, maxWidth: 80 },
-  chipNameYou: { color: Colors.accent },
+  chipName: { fontFamily: Fonts.body500, fontSize: 13, color: C.ink, maxWidth: 80 },
+  chipNameYou: { color: C.accent },
 
   // ── Card ──
   card: {
-    backgroundColor: Colors.surface, borderRadius: 18, overflow: 'hidden',
+    backgroundColor: C.surface, borderRadius: 18, overflow: 'hidden',
     shadowColor: '#101114', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 2,
     marginBottom: 22,
   },
-  divider: { height: 1, backgroundColor: Colors.hairline, marginLeft: 16 },
-  emptyRow: { fontFamily: Fonts.body400, fontSize: 13.5, color: Colors.faint, textAlign: 'center', paddingVertical: 20 },
+  divider: { height: 1, backgroundColor: C.hairline, marginLeft: 16 },
+  emptyRow: { fontFamily: Fonts.body400, fontSize: 13.5, color: C.faint, textAlign: 'center', paddingVertical: 20 },
 
   // ── Balance ──
   balRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingVertical: 14 },
   balDot: { width: 8, height: 8, borderRadius: 99, flexShrink: 0 },
-  balLabel: { flex: 1, fontFamily: Fonts.body400, fontSize: 13.5, color: Colors.ink },
+  balLabel: { flex: 1, fontFamily: Fonts.body400, fontSize: 13.5, color: C.ink },
   balAmt: { fontFamily: Fonts.body700, fontSize: 15 },
-  sbpPill: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8, backgroundColor: Colors.accentSoft, marginLeft: 4 },
-  sbpText: { fontFamily: Fonts.body700, fontSize: 11.5, color: Colors.accent },
+  sbpPill: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8, backgroundColor: C.accentSoft, marginLeft: 4 },
+  sbpText: { fontFamily: Fonts.body700, fontSize: 11.5, color: C.accent },
 
   // ── Expense ──
   expRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 13 },
   expDot: {
     width: 10, height: 10, borderRadius: 99, flexShrink: 0,
-    backgroundColor: Colors.accentSoft, borderWidth: 2, borderColor: Colors.accent,
+    backgroundColor: C.accentSoft, borderWidth: 2, borderColor: C.accent,
   },
   expInfo: { flex: 1, minWidth: 0 },
-  expTitle: { fontFamily: Fonts.body600, fontSize: 14, color: Colors.ink },
-  expMeta: { fontFamily: Fonts.body400, fontSize: 12, color: Colors.sub, marginTop: 1 },
-  expAmt: { fontFamily: Fonts.body700, fontSize: 15, color: Colors.ink },
+  expTitle: { fontFamily: Fonts.body600, fontSize: 14, color: C.ink },
+  expMeta: { fontFamily: Fonts.body400, fontSize: 12, color: C.sub, marginTop: 1 },
+  expAmt: { fontFamily: Fonts.body700, fontSize: 15, color: C.ink },
 
   // ── History ──
   histRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 12 },
   histIcon: {
-    width: 30, height: 30, borderRadius: 999, backgroundColor: Colors.surface,
+    width: 30, height: 30, borderRadius: 999, backgroundColor: C.surface,
     alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-    borderWidth: 1, borderColor: Colors.line,
+    borderWidth: 1, borderColor: C.line,
   },
-  histIconExp: { backgroundColor: Colors.accentSoft, borderColor: Colors.accent },
+  histIconExp: { backgroundColor: C.accentSoft, borderColor: C.accent },
   histIconMem: { backgroundColor: '#E6F6EE', borderColor: '#0E9F6E' },
   histIconSettled: { backgroundColor: '#E6F6EE', borderColor: '#0E9F6E' },
-  histIconText: { fontFamily: Fonts.brand700, fontSize: 13, color: Colors.sub },
-  histIconTextExp: { color: Colors.accent },
+  histIconText: { fontFamily: Fonts.brand700, fontSize: 13, color: C.sub },
+  histIconTextExp: { color: C.accent },
   histIconTextSettled: { color: '#0E9F6E', fontSize: 11 },
-  histTitle: { fontFamily: Fonts.body500, fontSize: 13.5, color: Colors.ink },
-  histSub: { fontFamily: Fonts.body400, fontSize: 11.5, color: Colors.faint, marginTop: 2 },
+  histTitle: { fontFamily: Fonts.body500, fontSize: 13.5, color: C.ink },
+  histSub: { fontFamily: Fonts.body400, fontSize: 11.5, color: C.faint, marginTop: 2 },
 
   // ── FAB ──
   fabWrap: {
@@ -456,7 +458,7 @@ const st = StyleSheet.create({
   },
   fab: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-    backgroundColor: Colors.accent, borderRadius: 18, paddingVertical: 16,
+    backgroundColor: C.accent, borderRadius: 18, paddingVertical: 16,
     shadowColor: '#2F5BEA', shadowOffset: { width: 0, height: 14 },
     shadowOpacity: 0.35, shadowRadius: 30, elevation: 10,
   },

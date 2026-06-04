@@ -1,11 +1,11 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, Animated,
   Modal, StyleSheet, Pressable, ActivityIndicator,
   KeyboardAvoidingView, Platform, ScrollView, Keyboard,
 } from 'react-native';
 import Svg, { Path, Circle } from 'react-native-svg';
-import { Colors } from '@/constants/colors';
+import { useColors, ThemeColors } from '@/constants/colors';
 import { Fonts } from '@/constants/fonts';
 import { searchUsersByPartial, useAddMember, FoundUser } from '@/hooks/useAddMember';
 
@@ -16,6 +16,8 @@ interface Props {
 }
 
 export function AddMemberSheet({ open, onClose, groupId }: Props) {
+  const C = useColors();
+  const s = useMemo(() => makeStyles(C), [C]);
   const [query, setQuery] = useState('');
   const [searching, setSearching] = useState(false);
   const [suggestions, setSuggestions] = useState<FoundUser[]>([]);
@@ -195,59 +197,49 @@ export function AddMemberSheet({ open, onClose, groupId }: Props) {
   );
 }
 
-const s = StyleSheet.create({
+const makeStyles = (C: ThemeColors) => StyleSheet.create({
   root: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'transparent' },
-  overlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(16,17,20,0.48)' },
-  sheet: { backgroundColor: Colors.page, borderTopLeftRadius: 22, borderTopRightRadius: 22 },
-  handle: { width: 38, height: 4, borderRadius: 999, backgroundColor: Colors.line, alignSelf: 'center', marginTop: 12 },
+  overlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(16,17,20,0.56)' },
+  sheet: { backgroundColor: C.page, borderTopLeftRadius: 22, borderTopRightRadius: 22 },
+  handle: { width: 38, height: 4, borderRadius: 999, backgroundColor: C.line, alignSelf: 'center', marginTop: 12 },
   inner: { padding: 20, paddingBottom: 40 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
-  title: { fontFamily: Fonts.brand700, fontSize: 22, color: Colors.ink, letterSpacing: -0.8 },
+  title: { fontFamily: Fonts.brand700, fontSize: 22, color: C.ink, letterSpacing: -0.8 },
   closeBtn: {
-    width: 32, height: 32, borderRadius: 999, backgroundColor: Colors.surface,
+    width: 32, height: 32, borderRadius: 999, backgroundColor: C.surface,
     alignItems: 'center', justifyContent: 'center',
     shadowColor: '#101114', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 2,
   },
-  hint: { fontFamily: Fonts.body400, fontSize: 13, color: Colors.sub, marginBottom: 16, lineHeight: 19 },
-
+  hint: { fontFamily: Fonts.body400, fontSize: 13, color: C.sub, marginBottom: 16, lineHeight: 19 },
   inputWrap: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: Colors.surface, borderRadius: 16, overflow: 'hidden',
+    backgroundColor: C.surface, borderRadius: 16, overflow: 'hidden',
     shadowColor: '#101114', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 2,
     borderWidth: 2, borderColor: 'transparent',
   },
-  inputWrapSelected: { borderColor: Colors.accent },
+  inputWrapSelected: { borderColor: C.accent },
   inputIcon: { paddingLeft: 14, paddingRight: 8 },
-  selAvatar: {
-    width: 26, height: 26, borderRadius: 999, backgroundColor: Colors.accent,
-    alignItems: 'center', justifyContent: 'center',
-  },
+  selAvatar: { width: 26, height: 26, borderRadius: 999, backgroundColor: C.accent, alignItems: 'center', justifyContent: 'center' },
   selLetter: { fontFamily: Fonts.brand700, fontSize: 11, color: '#fff' },
-  input: { flex: 1, fontFamily: Fonts.body400, fontSize: 15, color: Colors.ink, paddingVertical: 14 },
+  input: { flex: 1, fontFamily: Fonts.body400, fontSize: 15, color: C.ink, paddingVertical: 14 },
   clearBtn: { padding: 12 },
-
   dropdown: {
-    backgroundColor: Colors.surface, borderRadius: 16, marginTop: 6, overflow: 'hidden',
+    backgroundColor: C.surface, borderRadius: 16, marginTop: 6, overflow: 'hidden',
     shadowColor: '#101114', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 16, elevation: 6,
   },
   suggestion: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14, paddingVertical: 12 },
-  suggBorder: { borderBottomWidth: 1, borderBottomColor: Colors.hairline },
-  suggAvatar: {
-    width: 36, height: 36, borderRadius: 999, backgroundColor: Colors.accentSoft,
-    alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-  },
-  suggLetter: { fontFamily: Fonts.brand700, fontSize: 14, color: Colors.accent },
-  suggName: { fontFamily: Fonts.body600, fontSize: 14, color: Colors.ink },
-  suggCode: { fontFamily: Fonts.body400, fontSize: 11.5, color: Colors.faint, marginTop: 1 },
-
-  notFound: { fontFamily: Fonts.body400, fontSize: 13, color: Colors.faint, marginTop: 8, marginBottom: 4 },
-  error: { fontFamily: Fonts.body400, fontSize: 13, color: Colors.neg, marginTop: 8 },
-
+  suggBorder: { borderBottomWidth: 1, borderBottomColor: C.hairline },
+  suggAvatar: { width: 36, height: 36, borderRadius: 999, backgroundColor: C.accentSoft, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  suggLetter: { fontFamily: Fonts.brand700, fontSize: 14, color: C.accent },
+  suggName: { fontFamily: Fonts.body600, fontSize: 14, color: C.ink },
+  suggCode: { fontFamily: Fonts.body400, fontSize: 11.5, color: C.faint, marginTop: 1 },
+  notFound: { fontFamily: Fonts.body400, fontSize: 13, color: C.faint, marginTop: 8, marginBottom: 4 },
+  error: { fontFamily: Fonts.body400, fontSize: 13, color: C.neg, marginTop: 8 },
   addBtn: {
-    marginTop: 18, backgroundColor: Colors.accent, borderRadius: 16, padding: 16, alignItems: 'center',
+    marginTop: 18, backgroundColor: C.accent, borderRadius: 16, padding: 16, alignItems: 'center',
     shadowColor: '#2F5BEA', shadowOffset: { width: 0, height: 14 }, shadowOpacity: 0.32, shadowRadius: 30, elevation: 10,
   },
-  addBtnDisabled: { backgroundColor: Colors.accentSoft, shadowOpacity: 0, elevation: 0 },
+  addBtnDisabled: { backgroundColor: C.accentSoft, shadowOpacity: 0, elevation: 0 },
   addBtnText: { fontFamily: Fonts.body700, fontSize: 16, color: '#fff' },
-  addBtnTextDisabled: { color: Colors.accent },
+  addBtnTextDisabled: { color: C.accent },
 });

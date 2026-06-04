@@ -1,11 +1,11 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, Animated,
   Modal, StyleSheet, ScrollView, Pressable, ActivityIndicator,
   KeyboardAvoidingView, Platform, Keyboard,
 } from 'react-native';
 import Svg, { Path, Circle } from 'react-native-svg';
-import { Colors, CAT_META, CatKey } from '@/constants/colors';
+import { useColors, ThemeColors, CAT_META, CatKey } from '@/constants/colors';
 import { Fonts } from '@/constants/fonts';
 import { CatIcon } from './CatIcon';
 import { useCreateGroup } from '@/hooks/useCreateGroup';
@@ -29,6 +29,8 @@ const PLACEHOLDERS: Record<CatKey, string> = {
 };
 
 export function NewGroupSheet({ open, onClose, onCreated }: Props) {
+  const C = useColors();
+  const s = useMemo(() => makeStyles(C), [C]);
   const [cat, setCat] = useState<CatKey>('home');
   const [groupName, setGroupName] = useState('');
   const [createError, setCreateError] = useState('');
@@ -143,7 +145,7 @@ export function NewGroupSheet({ open, onClose, onCreated }: Props) {
                 <Text style={s.sheetTitle}>новая группа</Text>
                 <TouchableOpacity onPress={onClose} style={s.closeBtn} activeOpacity={0.7}>
                   <Svg width={14} height={14} viewBox="0 0 24 24" fill="none">
-                    <Path d="M18 6 6 18M6 6l12 12" stroke={Colors.sub} strokeWidth={2.5} strokeLinecap="round"/>
+                    <Path d="M18 6 6 18M6 6l12 12" stroke={C.sub} strokeWidth={2.5} strokeLinecap="round"/>
                   </Svg>
                 </TouchableOpacity>
               </View>
@@ -171,7 +173,7 @@ export function NewGroupSheet({ open, onClose, onCreated }: Props) {
                   value={groupName}
                   onChangeText={setGroupName}
                   placeholder={PLACEHOLDERS[cat]}
-                  placeholderTextColor={Colors.faint}
+                  placeholderTextColor={C.faint}
                 />
               </View>
 
@@ -192,7 +194,7 @@ export function NewGroupSheet({ open, onClose, onCreated }: Props) {
                       <Text style={s.chipName} numberOfLines={1}>{m.display_name ?? m.code}</Text>
                       <TouchableOpacity onPress={() => handleRemoveMember(m.id)} hitSlop={8}>
                         <Svg width={12} height={12} viewBox="0 0 24 24" fill="none">
-                          <Path d="M18 6 6 18M6 6l12 12" stroke={Colors.faint} strokeWidth={2.5} strokeLinecap="round"/>
+                          <Path d="M18 6 6 18M6 6l12 12" stroke={C.faint} strokeWidth={2.5} strokeLinecap="round"/>
                         </Svg>
                       </TouchableOpacity>
                     </View>
@@ -204,8 +206,8 @@ export function NewGroupSheet({ open, onClose, onCreated }: Props) {
               <View style={s.searchWrap}>
                 <View style={s.searchIcon}>
                   <Svg width={15} height={15} viewBox="0 0 24 24" fill="none">
-                    <Circle cx="11" cy="11" r="7" stroke={Colors.faint} strokeWidth={1.8}/>
-                    <Path d="M16.5 16.5l4 4" stroke={Colors.faint} strokeWidth={1.8} strokeLinecap="round"/>
+                    <Circle cx="11" cy="11" r="7" stroke={C.faint} strokeWidth={1.8}/>
+                    <Path d="M16.5 16.5l4 4" stroke={C.faint} strokeWidth={1.8} strokeLinecap="round"/>
                   </Svg>
                 </View>
                 <TextInput
@@ -213,11 +215,11 @@ export function NewGroupSheet({ open, onClose, onCreated }: Props) {
                   value={query}
                   onChangeText={setQuery}
                   placeholder="Найти по ID участника"
-                  placeholderTextColor={Colors.faint}
+                  placeholderTextColor={C.faint}
                   autoCapitalize="none"
                   autoCorrect={false}
                 />
-                {searching && <ActivityIndicator color={Colors.accent} size="small" style={{ marginRight: 12 }} />}
+                {searching && <ActivityIndicator color={C.accent} size="small" style={{ marginRight: 12 }} />}
               </View>
 
               {/* Suggestions */}
@@ -238,7 +240,7 @@ export function NewGroupSheet({ open, onClose, onCreated }: Props) {
                         <Text style={s.suggCode}>ID: {u.code}</Text>
                       </View>
                       <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
-                        <Path d="M9 6l6 6-6 6" stroke={Colors.accent} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"/>
+                        <Path d="M9 6l6 6-6 6" stroke={C.accent} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"/>
                       </Svg>
                     </TouchableOpacity>
                   ))}
@@ -257,7 +259,7 @@ export function NewGroupSheet({ open, onClose, onCreated }: Props) {
                 activeOpacity={0.85}
               >
                 {isPending
-                  ? <ActivityIndicator color={Colors.accent} />
+                  ? <ActivityIndicator color={C.accent} />
                   : <Text style={[s.createBtnText, !canCreate && s.createBtnTextDisabled]}>
                       {selectedMembers.length > 0
                         ? `Создать группу · ${selectedMembers.length + 1} участника`
@@ -273,79 +275,79 @@ export function NewGroupSheet({ open, onClose, onCreated }: Props) {
   );
 }
 
-const s = StyleSheet.create({
+const makeStyles = (C: ThemeColors) => StyleSheet.create({
   root: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'transparent' },
   overlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(16,17,20,0.48)' },
-  sheet: { backgroundColor: Colors.page, borderTopLeftRadius: 22, borderTopRightRadius: 22, maxHeight: '90%' },
-  handle: { width: 38, height: 4, borderRadius: 999, backgroundColor: Colors.line, alignSelf: 'center', marginTop: 12 },
+  sheet: { backgroundColor: C.page, borderTopLeftRadius: 22, borderTopRightRadius: 22, maxHeight: '90%' },
+  handle: { width: 38, height: 4, borderRadius: 999, backgroundColor: C.line, alignSelf: 'center', marginTop: 12 },
   inner: { padding: 20, paddingBottom: 40 },
   sheetHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 22 },
-  sheetTitle: { fontFamily: Fonts.brand700, fontSize: 22, color: Colors.ink, letterSpacing: -0.8 },
+  sheetTitle: { fontFamily: Fonts.brand700, fontSize: 22, color: C.ink, letterSpacing: -0.8 },
   closeBtn: {
-    width: 32, height: 32, borderRadius: 999, backgroundColor: Colors.surface,
+    width: 32, height: 32, borderRadius: 999, backgroundColor: C.surface,
     alignItems: 'center', justifyContent: 'center',
     shadowColor: '#101114', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 2,
   },
-  sectionLabel: { fontFamily: Fonts.brand600, fontSize: 12, color: Colors.sub, letterSpacing: -0.2, marginBottom: 10, textTransform: 'lowercase' },
+  sectionLabel: { fontFamily: Fonts.brand600, fontSize: 12, color: C.sub, letterSpacing: -0.2, marginBottom: 10, textTransform: 'lowercase' },
   catGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 22 },
   catBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 9,
-    backgroundColor: Colors.surface, borderRadius: 14, paddingVertical: 11, paddingHorizontal: 12,
+    backgroundColor: C.surface, borderRadius: 14, paddingVertical: 11, paddingHorizontal: 12,
     shadowColor: '#101114', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 2,
     width: '31%',
   },
-  catLabel: { fontFamily: Fonts.body400, fontSize: 13, color: Colors.ink },
+  catLabel: { fontFamily: Fonts.body400, fontSize: 13, color: C.ink },
   inputWrap: {
-    backgroundColor: Colors.surface, borderRadius: 14, paddingHorizontal: 16,
+    backgroundColor: C.surface, borderRadius: 14, paddingHorizontal: 16,
     shadowColor: '#101114', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 2,
     marginBottom: 22,
   },
-  input: { fontFamily: Fonts.body400, fontSize: 15, color: Colors.ink, paddingVertical: 14 },
+  input: { fontFamily: Fonts.body400, fontSize: 15, color: C.ink, paddingVertical: 14 },
   membersHeader: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 10 },
-  optional: { fontFamily: Fonts.body400, fontSize: 11.5, color: Colors.faint },
+  optional: { fontFamily: Fonts.body400, fontSize: 11.5, color: C.faint },
 
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 10 },
   chip: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
-    backgroundColor: Colors.accentSoft, borderRadius: 999, paddingVertical: 6, paddingHorizontal: 10,
+    backgroundColor: C.accentSoft, borderRadius: 999, paddingVertical: 6, paddingHorizontal: 10,
   },
   chipAvatar: {
-    width: 20, height: 20, borderRadius: 999, backgroundColor: Colors.accent,
+    width: 20, height: 20, borderRadius: 999, backgroundColor: C.accent,
     alignItems: 'center', justifyContent: 'center',
   },
   chipLetter: { fontFamily: Fonts.brand700, fontSize: 9, color: '#fff' },
-  chipName: { fontFamily: Fonts.body500, fontSize: 12.5, color: Colors.accent, maxWidth: 80 },
+  chipName: { fontFamily: Fonts.body500, fontSize: 12.5, color: C.accent, maxWidth: 80 },
 
   searchWrap: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: Colors.surface, borderRadius: 14, overflow: 'hidden',
+    backgroundColor: C.surface, borderRadius: 14, overflow: 'hidden',
     shadowColor: '#101114', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 2,
     marginBottom: 6,
   },
   searchIcon: { paddingLeft: 14, paddingRight: 8 },
-  searchInput: { flex: 1, fontFamily: Fonts.body400, fontSize: 14, color: Colors.ink, paddingVertical: 13 },
+  searchInput: { flex: 1, fontFamily: Fonts.body400, fontSize: 14, color: C.ink, paddingVertical: 13 },
 
   dropdown: {
-    backgroundColor: Colors.surface, borderRadius: 14, marginBottom: 10, overflow: 'hidden',
+    backgroundColor: C.surface, borderRadius: 14, marginBottom: 10, overflow: 'hidden',
     shadowColor: '#101114', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 16, elevation: 6,
   },
   suggestion: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14, paddingVertical: 11 },
-  suggBorder: { borderBottomWidth: 1, borderBottomColor: Colors.hairline },
+  suggBorder: { borderBottomWidth: 1, borderBottomColor: C.hairline },
   suggAvatar: {
-    width: 32, height: 32, borderRadius: 999, backgroundColor: Colors.accentSoft,
+    width: 32, height: 32, borderRadius: 999, backgroundColor: C.accentSoft,
     alignItems: 'center', justifyContent: 'center', flexShrink: 0,
   },
-  suggLetter: { fontFamily: Fonts.brand700, fontSize: 13, color: Colors.accent },
-  suggName: { fontFamily: Fonts.body600, fontSize: 13.5, color: Colors.ink },
-  suggCode: { fontFamily: Fonts.body400, fontSize: 11, color: Colors.faint, marginTop: 1 },
-  notFound: { fontFamily: Fonts.body400, fontSize: 13, color: Colors.faint, marginBottom: 8 },
+  suggLetter: { fontFamily: Fonts.brand700, fontSize: 13, color: C.accent },
+  suggName: { fontFamily: Fonts.body600, fontSize: 13.5, color: C.ink },
+  suggCode: { fontFamily: Fonts.body400, fontSize: 11, color: C.faint, marginTop: 1 },
+  notFound: { fontFamily: Fonts.body400, fontSize: 13, color: C.faint, marginBottom: 8 },
 
   createBtn: {
-    backgroundColor: Colors.accent, borderRadius: 16, padding: 16, alignItems: 'center', marginTop: 16,
+    backgroundColor: C.accent, borderRadius: 16, padding: 16, alignItems: 'center', marginTop: 16,
     shadowColor: '#2F5BEA', shadowOffset: { width: 0, height: 14 }, shadowOpacity: 0.32, shadowRadius: 30, elevation: 10,
   },
-  createBtnDisabled: { backgroundColor: Colors.accentSoft, shadowOpacity: 0, elevation: 0 },
+  createBtnDisabled: { backgroundColor: C.accentSoft, shadowOpacity: 0, elevation: 0 },
   createBtnText: { fontFamily: Fonts.body700, fontSize: 16, color: '#fff' },
-  createBtnTextDisabled: { color: Colors.accent },
-  errorText: { fontFamily: Fonts.body400, fontSize: 13, color: Colors.neg, marginBottom: 10 },
+  createBtnTextDisabled: { color: C.accent },
+  errorText: { fontFamily: Fonts.body400, fontSize: 13, color: C.neg, marginBottom: 10 },
 });

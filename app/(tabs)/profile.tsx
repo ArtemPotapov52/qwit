@@ -1,8 +1,9 @@
+import { useMemo } from 'react';
 import { ScrollView, View, Text, TouchableOpacity, Switch, StyleSheet, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import Svg, { Path, Circle, Rect, G } from 'react-native-svg';
-import { Colors } from '@/constants/colors';
+import { useColors, ThemeColors } from '@/constants/colors';
 import { Fonts } from '@/constants/fonts';
 import { useAuthStore } from '@/store/auth';
 import { useSettingsStore, FONT_SCALES, fs } from '@/store/settings';
@@ -14,12 +15,14 @@ const FREE_GROUP_LIMIT = 3;
 function Chevron() {
   return (
     <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
-      <Path d="M9 6l6 6-6 6" stroke={Colors.faint} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"/>
+      <Path d="M9 6l6 6-6 6" stroke={C.faint} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"/>
     </Svg>
   );
 }
 
 export default function ProfileScreen() {
+  const C = useColors();
+  const s = useMemo(() => makeStyles(C), [C]);
   const router = useRouter();
   const { user, signOut, isPremium } = useAuthStore();
   const { fontScale, setFontScale, notifications, setNotifications, darkMode, setDarkMode } = useSettingsStore();
@@ -61,8 +64,8 @@ export default function ProfileScreen() {
           onPress={() => router.push('/settings' as any)}
         >
           <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
-            <Circle cx="12" cy="12" r="3" stroke={Colors.accent} strokeWidth={1.8}/>
-            <Path d="M19 12a7 7 0 0 0-.1-1l2-1.6-2-3.4-2.3 1a7 7 0 0 0-1.7-1l-.3-2.5h-4l-.3 2.5a7 7 0 0 0-1.7 1l-2.3-1-2 3.4 2 1.6a7 7 0 0 0 0 2l-2 1.6 2 3.4 2.3-1a7 7 0 0 0 1.7 1l.3 2.5h4l.3-2.5a7 7 0 0 0 1.7-1l2.3 1 2-3.4-2-1.6a7 7 0 0 0 .1-1z" stroke={Colors.accent} strokeWidth={1.8}/>
+            <Circle cx="12" cy="12" r="3" stroke={C.accent} strokeWidth={1.8}/>
+            <Path d="M19 12a7 7 0 0 0-.1-1l2-1.6-2-3.4-2.3 1a7 7 0 0 0-1.7-1l-.3-2.5h-4l-.3 2.5a7 7 0 0 0-1.7 1l-2.3-1-2 3.4 2 1.6a7 7 0 0 0 0 2l-2 1.6 2 3.4 2.3-1a7 7 0 0 0 1.7 1l.3 2.5h4l.3-2.5a7 7 0 0 0 1.7-1l2.3 1 2-3.4-2-1.6a7 7 0 0 0 .1-1z" stroke={C.accent} strokeWidth={1.8}/>
           </Svg>
         </TouchableOpacity>
       </View>
@@ -130,7 +133,7 @@ export default function ProfileScreen() {
             <Switch
               value={notifications}
               onValueChange={setNotifications}
-              trackColor={{ true: Colors.accent, false: Colors.line }}
+              trackColor={{ true: C.accent, false: C.line }}
               thumbColor="#fff"
             />
           </View>
@@ -168,7 +171,7 @@ export default function ProfileScreen() {
             <Switch
               value={darkMode}
               onValueChange={setDarkMode}
-              trackColor={{ true: Colors.accent, false: Colors.line }}
+              trackColor={{ true: C.accent, false: C.line }}
               thumbColor="#fff"
             />
           </View>
@@ -177,7 +180,7 @@ export default function ProfileScreen() {
           <TouchableOpacity style={s.settingRow} activeOpacity={0.7} onPress={handleAbout}>
             <View style={[s.settingIcon, { backgroundColor: '#F0F1F3' }]}>
               <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
-                <G><Circle cx="12" cy="12" r="9" stroke={Colors.sub} strokeWidth={1.8} fill="none"/><Path d="M12 16v-4M12 8h.01" stroke={Colors.sub} strokeWidth={1.8} strokeLinecap="round"/></G>
+                <G><Circle cx="12" cy="12" r="9" stroke={C.sub} strokeWidth={1.8} fill="none"/><Path d="M12 16v-4M12 8h.01" stroke={C.sub} strokeWidth={1.8} strokeLinecap="round"/></G>
               </Svg>
             </View>
             <Text style={s.settingLabel}>О приложении · v0.1</Text>
@@ -210,10 +213,10 @@ export default function ProfileScreen() {
         </View>
 
         <TouchableOpacity style={[s.actionBtn, { marginTop: 12 }]} onPress={handleLock} activeOpacity={0.7}>
-          <Text style={[s.actionBtnText, { color: Colors.sub }]}>Заблокировать приложение</Text>
+          <Text style={[s.actionBtnText, { color: C.sub }]}>Заблокировать приложение</Text>
         </TouchableOpacity>
         <TouchableOpacity style={[s.actionBtn, { marginTop: 10 }]} onPress={handleSignOut} activeOpacity={0.7}>
-          <Text style={[s.actionBtnText, { color: Colors.neg }]}>Выйти</Text>
+          <Text style={[s.actionBtnText, { color: C.neg }]}>Выйти</Text>
         </TouchableOpacity>
         <Text style={s.footer}>qwit · версия 0.1 · сделано в России</Text>
       </ScrollView>
@@ -221,73 +224,73 @@ export default function ProfileScreen() {
   );
 }
 
-const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.page },
+const makeStyles = (C: ThemeColors) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: C.page },
   header: {
     paddingHorizontal: 18, paddingTop: 12, paddingBottom: 12,
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    backgroundColor: Colors.page,
+    backgroundColor: C.page,
   },
-  headerTitle: { fontFamily: Fonts.brand700, fontSize: 24, color: Colors.ink, letterSpacing: -1.2 },
+  headerTitle: { fontFamily: Fonts.brand700, fontSize: 24, color: C.ink, letterSpacing: -1.2 },
   settingsBtn: {
-    width: 38, height: 38, borderRadius: 999, backgroundColor: Colors.accentSoft,
+    width: 38, height: 38, borderRadius: 999, backgroundColor: C.accentSoft,
     alignItems: 'center', justifyContent: 'center',
   },
   scroll: { paddingHorizontal: 18, paddingBottom: 24 },
   card: {
-    backgroundColor: Colors.surface, borderRadius: 18,
+    backgroundColor: C.surface, borderRadius: 18,
     shadowColor: '#101114', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 2,
   },
   sectionHeader: { marginTop: 22, marginBottom: 12 },
-  sectionTitle: { fontFamily: Fonts.brand700, fontSize: 18, color: Colors.ink, letterSpacing: -0.9, textTransform: 'lowercase' },
+  sectionTitle: { fontFamily: Fonts.brand700, fontSize: 18, color: C.ink, letterSpacing: -0.9, textTransform: 'lowercase' },
 
   userRow: { flexDirection: 'row', alignItems: 'center', gap: 15, paddingVertical: 6, paddingHorizontal: 2 },
-  avatar: { width: 64, height: 64, borderRadius: 999, backgroundColor: Colors.accent, alignItems: 'center', justifyContent: 'center' },
+  avatar: { width: 64, height: 64, borderRadius: 999, backgroundColor: C.accent, alignItems: 'center', justifyContent: 'center' },
   avatarText: { fontFamily: Fonts.brand700, fontSize: 26, color: '#fff' },
-  userName: { fontFamily: Fonts.brand700, fontSize: 21, color: Colors.ink, letterSpacing: -0.6 },
-  userSub: { fontFamily: Fonts.body400, fontSize: 13, color: Colors.sub, marginTop: 2 },
+  userName: { fontFamily: Fonts.brand700, fontSize: 21, color: C.ink, letterSpacing: -0.6 },
+  userSub: { fontFamily: Fonts.body400, fontSize: 13, color: C.sub, marginTop: 2 },
   codeRow: { flexDirection: 'row', alignItems: 'center', marginTop: 5 },
-  codeLabel: { fontFamily: Fonts.body400, fontSize: 11.5, color: Colors.faint },
-  codeValue: { fontFamily: Fonts.body700, fontSize: 11.5, color: Colors.sub, letterSpacing: 1 },
+  codeLabel: { fontFamily: Fonts.body400, fontSize: 11.5, color: C.faint },
+  codeValue: { fontFamily: Fonts.body700, fontSize: 11.5, color: C.sub, letterSpacing: 1 },
 
-  premiumBlock: { marginTop: 18, borderRadius: 18, padding: 20, backgroundColor: Colors.accent },
+  premiumBlock: { marginTop: 18, borderRadius: 18, padding: 20, backgroundColor: C.accent },
   premiumShadow: { shadowColor: '#2F5BEA', shadowOffset: { width: 0, height: 14 }, shadowOpacity: 0.32, shadowRadius: 30, elevation: 10 },
   premiumTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   premiumWordmark: { fontFamily: Fonts.brand700, fontSize: 18, color: '#fff', letterSpacing: -0.5 },
   premiumBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999, backgroundColor: '#fff' },
-  premiumBadgeText: { fontFamily: Fonts.brand700, fontSize: 12, color: Colors.accent, letterSpacing: 0.3 },
+  premiumBadgeText: { fontFamily: Fonts.brand700, fontSize: 12, color: C.accent, letterSpacing: 0.3 },
   premiumBody: { fontFamily: Fonts.body400, fontSize: 13.5, color: 'rgba(255,255,255,0.82)', marginTop: 10, lineHeight: 20 },
   premiumBtn: { marginTop: 16, padding: 12, borderRadius: 12, backgroundColor: '#fff', alignItems: 'center' },
-  premiumBtnText: { fontFamily: Fonts.body700, fontSize: 14.5, color: Colors.accent },
+  premiumBtnText: { fontFamily: Fonts.body700, fontSize: 14.5, color: C.accent },
   premiumHint: { fontFamily: Fonts.body400, fontSize: 11.5, color: 'rgba(255,255,255,0.82)', textAlign: 'center', marginTop: 9 },
 
   tariffHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
-  tariffName: { fontFamily: Fonts.body700, fontSize: 15, color: Colors.ink },
-  tariffHist: { fontFamily: Fonts.body400, fontSize: 12.5, color: Colors.sub },
+  tariffName: { fontFamily: Fonts.body700, fontSize: 15, color: C.ink },
+  tariffHist: { fontFamily: Fonts.body400, fontSize: 12.5, color: C.sub },
   tariffRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
-  tariffLabel: { fontFamily: Fonts.body400, fontSize: 12.5, color: Colors.sub },
-  tariffVal: { fontFamily: Fonts.body600, fontSize: 12.5, color: Colors.ink },
-  tariffTrack: { height: 7, borderRadius: 999, backgroundColor: Colors.accentSoft, overflow: 'hidden' },
-  tariffFill: { height: '100%', borderRadius: 999, backgroundColor: Colors.accent },
+  tariffLabel: { fontFamily: Fonts.body400, fontSize: 12.5, color: C.sub },
+  tariffVal: { fontFamily: Fonts.body600, fontSize: 12.5, color: C.ink },
+  tariffTrack: { height: 7, borderRadius: 999, backgroundColor: C.accentSoft, overflow: 'hidden' },
+  tariffFill: { height: '100%', borderRadius: 999, backgroundColor: C.accent },
 
   settingRow: { flexDirection: 'row', alignItems: 'center', gap: 13, paddingHorizontal: 14, paddingVertical: 13 },
-  settingBorder: { borderBottomWidth: 1, borderBottomColor: Colors.hairline },
+  settingBorder: { borderBottomWidth: 1, borderBottomColor: C.hairline },
   settingIcon: { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  settingLabel: { flex: 1, fontFamily: Fonts.body400, fontSize: 14, color: Colors.ink },
-  settingRight: { fontFamily: Fonts.body400, fontSize: 12, color: Colors.faint },
+  settingLabel: { flex: 1, fontFamily: Fonts.body400, fontSize: 14, color: C.ink },
+  settingRight: { fontFamily: Fonts.body400, fontSize: 12, color: C.faint },
 
   actionBtn: {
     padding: 13, borderRadius: 18, alignItems: 'center',
-    backgroundColor: Colors.surface,
+    backgroundColor: C.surface,
     shadowColor: '#101114', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 2,
   },
   actionBtnText: { fontFamily: Fonts.body600, fontSize: 14.5 },
-  footer: { fontFamily: Fonts.body400, fontSize: 11.5, color: Colors.faint, textAlign: 'center', marginTop: 14 },
+  footer: { fontFamily: Fonts.body400, fontSize: 11.5, color: C.faint, textAlign: 'center', marginTop: 14 },
 
   fontRow: { flexDirection: 'row', padding: 8, gap: 6 },
-  fontBtn: { flex: 1, alignItems: 'center', paddingVertical: 14, borderRadius: 14, backgroundColor: Colors.page, gap: 6 },
-  fontBtnActive: { backgroundColor: Colors.accentSoft },
-  fontBtnLabel: { fontFamily: Fonts.brand700, color: Colors.faint },
-  fontBtnLabelActive: { color: Colors.accent },
-  fontDot: { width: 5, height: 5, borderRadius: 99, backgroundColor: Colors.accent },
+  fontBtn: { flex: 1, alignItems: 'center', paddingVertical: 14, borderRadius: 14, backgroundColor: C.page, gap: 6 },
+  fontBtnActive: { backgroundColor: C.accentSoft },
+  fontBtnLabel: { fontFamily: Fonts.brand700, color: C.faint },
+  fontBtnLabelActive: { color: C.accent },
+  fontDot: { width: 5, height: 5, borderRadius: 99, backgroundColor: C.accent },
 });

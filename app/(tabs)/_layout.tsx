@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { Tabs, useRouter } from 'expo-router';
 import Svg, { Path } from 'react-native-svg';
-import { Colors } from '@/constants/colors';
+import { useColors, ThemeColors } from '@/constants/colors';
 import { Fonts } from '@/constants/fonts';
 import { NavIcon } from '@/components/ui/NavIcon';
 import { NewGroupSheet } from '@/components/ui/NewGroupSheet';
@@ -23,19 +23,16 @@ function BottomNav({ active, onChange, onAdd }: {
   onChange: (id: string) => void;
   onAdd: () => void;
 }) {
+  const C = useColors();
+  const s = useMemo(() => makeStyles(C), [C]);
   const left = TABS.slice(0, 2);
   const right = TABS.slice(2);
 
   const Tab = ({ tab }: { tab: typeof TABS[number] }) => {
     const isActive = tab.id === active;
-    const color = isActive ? Colors.accent : Colors.faint;
+    const color = isActive ? C.accent : C.faint;
     return (
-      <TouchableOpacity
-        key={tab.id}
-        onPress={() => onChange(tab.id)}
-        style={s.tab}
-        activeOpacity={0.7}
-      >
+      <TouchableOpacity key={tab.id} onPress={() => onChange(tab.id)} style={s.tab} activeOpacity={0.7}>
         <NavIcon name={tab.id} color={color} active={isActive} />
         <Text style={[s.tabLabel, { color, fontFamily: isActive ? Fonts.body700 : Fonts.body500 }]}>
           {tab.label}
@@ -110,24 +107,16 @@ export default function TabsLayout() {
   );
 }
 
-const s = StyleSheet.create({
+const makeStyles = (C: ThemeColors) => StyleSheet.create({
   nav: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingTop: 10,
-    paddingBottom: 26,
-    paddingHorizontal: 10,
-    backgroundColor: 'rgba(250,250,248,0.92)',
-    borderTopWidth: 1,
-    borderTopColor: Colors.line,
+    flexDirection: 'row', alignItems: 'center',
+    paddingTop: 10, paddingBottom: 26, paddingHorizontal: 10,
+    backgroundColor: C.page,
+    borderTopWidth: 1, borderTopColor: C.line,
   },
   navSide: { flex: 1, flexDirection: 'row', justifyContent: 'space-around' },
   navCenter: { width: 74, alignItems: 'center', flexShrink: 0 },
   tab: { flex: 1, alignItems: 'center', gap: 4, paddingVertical: 2 },
   tabLabel: { fontSize: 10 },
-  plusBtn: {
-    width: 44, height: 44, borderRadius: 999,
-    backgroundColor: Colors.accent,
-    alignItems: 'center', justifyContent: 'center',
-  },
+  plusBtn: { width: 44, height: 44, borderRadius: 999, backgroundColor: C.accent, alignItems: 'center', justifyContent: 'center' },
 });

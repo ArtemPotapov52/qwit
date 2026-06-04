@@ -1,21 +1,48 @@
 import { ViewStyle } from 'react-native';
+import { useSettingsStore } from '@/store/settings';
 
-export const Colors = {
-  page: '#FAFAF8',
-  surface: '#FFFFFF',
-  ink: '#101114',
-  sub: '#6A6C74',
-  faint: '#AFB2BA',
-  line: 'rgba(0,0,0,0.08)',
-  hairline: 'rgba(0,0,0,0.06)',
-  accent: '#2F5BEA',
-  accentInk: '#FFFFFF',
+export const lightColors = {
+  page:       '#FAFAF8',
+  surface:    '#FFFFFF',
+  ink:        '#101114',
+  sub:        '#6A6C74',
+  faint:      '#AFB2BA',
+  line:       'rgba(0,0,0,0.08)',
+  hairline:   'rgba(0,0,0,0.06)',
+  accent:     '#2F5BEA',
+  accentInk:  '#FFFFFF',
   accentSoft: '#EAEFFE',
-  accentSub: 'rgba(255,255,255,0.82)',
+  accentSub:  'rgba(255,255,255,0.82)',
   accentLine: 'rgba(255,255,255,0.24)',
-  pos: '#0E9F6E',
-  neg: '#EE4D45',
-} as const;
+  pos:        '#0E9F6E',
+  neg:        '#EE4D45',
+};
+
+export const darkColors = {
+  page:       '#0E0F13',
+  surface:    '#1A1C23',
+  ink:        '#ECEDF0',
+  sub:        '#8A8D97',
+  faint:      '#4A4D58',
+  line:       'rgba(255,255,255,0.09)',
+  hairline:   'rgba(255,255,255,0.06)',
+  accent:     '#4E7AFF',
+  accentInk:  '#FFFFFF',
+  accentSoft: '#1A2347',
+  accentSub:  'rgba(255,255,255,0.82)',
+  accentLine: 'rgba(255,255,255,0.24)',
+  pos:        '#0E9F6E',
+  neg:        '#EE4D45',
+};
+
+export type ThemeColors = typeof lightColors;
+
+// Static fallback for non-component contexts
+export const Colors = lightColors;
+
+export function useColors(): ThemeColors {
+  return useSettingsStore(s => s.darkMode ? darkColors : lightColors);
+}
 
 export const Shadows = {
   card: {
