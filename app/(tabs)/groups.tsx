@@ -80,7 +80,7 @@ export default function GroupsScreen() {
         </View>
 
         {isLoading ? (
-          <View style={s.center}><ActivityIndicator color={Colors.accent} /></View>
+          <View style={s.center}><ActivityIndicator color={C.accent} /></View>
         ) : !groups.length ? (
           <View style={s.empty}>
             <Text style={s.emptyText}>Нет групп. Создайте первую — нажмите «+»</Text>
@@ -103,7 +103,7 @@ export default function GroupsScreen() {
                   <View style={s.cardInfo}>
                     <View style={s.cardNameRow}>
                       {isPinned && (
-                        <Svg width={10} height={10} viewBox="0 0 24 24" fill={Colors.accent} style={{ marginRight: 5, marginTop: 1 }}>
+                        <Svg width={10} height={10} viewBox="0 0 24 24" fill={C.accent} style={{ marginRight: 5, marginTop: 1 }}>
                           <Path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
                         </Svg>
                       )}
@@ -113,20 +113,20 @@ export default function GroupsScreen() {
                   </View>
                   {g.amount === 0 ? (
                     <View style={s.amtCol}>
-                      <Text style={[s.amtNum, { color: Colors.faint }]}>0 ₽</Text>
+                      <Text style={[s.amtNum, { color: C.faint }]}>0 ₽</Text>
                       <Text style={s.amtLabel}>рассчитано</Text>
                     </View>
                   ) : (
                     <View style={s.amtCol}>
-                      <Text style={[s.amtNum, { color: g.amount > 0 ? Colors.pos : Colors.neg }]}>{fmt(g.amount)}</Text>
+                      <Text style={[s.amtNum, { color: g.amount > 0 ? C.pos : C.neg }]}>{fmt(g.amount)}</Text>
                       <Text style={s.amtLabel}>{g.amount > 0 ? 'вам должны' : 'вы должны'}</Text>
                     </View>
                   )}
                   <TouchableOpacity onPress={() => handleTogglePin(g.id)} hitSlop={12} style={s.pinBtn}>
-                    <Svg width={15} height={15} viewBox="0 0 24 24" fill={isPinned ? Colors.accent : 'none'}>
+                    <Svg width={15} height={15} viewBox="0 0 24 24" fill={isPinned ? C.accent : 'none'}>
                       <Path
                         d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
-                        stroke={isPinned ? Colors.accent : Colors.faint}
+                        stroke={isPinned ? C.accent : C.faint}
                         strokeWidth={1.8}
                       />
                     </Svg>
