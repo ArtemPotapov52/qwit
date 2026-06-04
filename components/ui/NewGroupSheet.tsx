@@ -1,17 +1,19 @@
 import { useState, useEffect, useRef } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, Animated,
-  Modal, StyleSheet, ScrollView, Pressable,
+  Modal, StyleSheet, ScrollView, Pressable, ActivityIndicator,
+  KeyboardAvoidingView, Platform,
 } from 'react-native';
 import Svg, { Path, Circle } from 'react-native-svg';
 import { Colors, CAT_META, CatKey } from '@/constants/colors';
 import { Fonts } from '@/constants/fonts';
 import { CatIcon } from './CatIcon';
+import { useCreateGroup } from '@/hooks/useCreateGroup';
 
 interface Props {
   open: boolean;
   onClose: () => void;
-  onCreated: (group: { cat: CatKey; name: string; members: string[] }) => void;
+  onCreated: () => void;
 }
 
 const PLACEHOLDERS: Record<CatKey, string> = {
@@ -27,8 +29,10 @@ export function NewGroupSheet({ open, onClose, onCreated }: Props) {
   const [cat, setCat] = useState<CatKey>('home');
   const [groupName, setGroupName] = useState('');
   const [members, setMembers] = useState(['']);
+  const [createError, setCreateError] = useState('');
   const slideAnim = useRef(new Animated.Value(600)).current;
   const overlayAnim = useRef(new Animated.Value(0)).current;
+  const { mutate: createGroup, isPending } = useCreateGroup();
 
   useEffect(() => {
     if (open) {
@@ -51,7 +55,10 @@ export function NewGroupSheet({ open, onClose, onCreated }: Props) {
 
   return (
     <Modal visible={open} transparent animationType="none" onRequestClose={onClose}>
-      <View style={s.root}>
+      <KeyboardAvoidingView
+        style={s.root}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
         <Animated.View style={[s.overlay, { opacity: overlayAnim }]}>
           <Pressable style={StyleSheet.absoluteFill as any} onPress={onClose} />
         </Animated.View>
@@ -130,23 +137,37 @@ export function NewGroupSheet({ open, onClose, onCreated }: Props) {
                 <Text style={s.addMemberText}>Добавить участника</Text>
               </TouchableOpacity>
 
+              {createError ? <Text style={s.errorText}>{createError}</Text> : null}
               <TouchableOpacity
-                onPress={() => canCreate && onCreated({ cat, name: groupName.trim(), members: members.filter(m => m.trim()) })}
-                style={[s.createBtn, !canCreate && s.createBtnDisabled]}
+                onPress={() => {
+                  if (!canCreate || isPending) return;
+                  setCreateError('');
+                  createGroup(
+                    { cat, name: groupName.trim() },
+                    {
+                      onSuccess: () => { onCreated(); },
+                      onError: (e: any) => setCreateError(e?.message ?? 'Ошибка создания группы'),
+                    }
+                  );
+                }}
+                style={[s.createBtn, (!canCreate || isPending) && s.createBtnDisabled]}
                 activeOpacity={0.85}
               >
-                <Text style={[s.createBtnText, !canCreate && s.createBtnTextDisabled]}>Создать группу</Text>
+                {isPending
+                  ? <ActivityIndicator color={Colors.accent} />
+                  : <Text style={[s.createBtnText, !canCreate && s.createBtnTextDisabled]}>Создать группу</Text>
+                }
               </TouchableOpacity>
             </View>
           </ScrollView>
         </Animated.View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
 
 const s = StyleSheet.create({
-  root: { flex: 1, justifyContent: 'flex-end' },
+  root: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'transparent' },
   overlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(16,17,20,0.48)' },
   sheet: {
     backgroundColor: Colors.page, borderTopLeftRadius: 22, borderTopRightRadius: 22,
@@ -201,4 +222,5 @@ const s = StyleSheet.create({
   createBtnDisabled: { backgroundColor: Colors.accentSoft, shadowOpacity: 0, elevation: 0 },
   createBtnText: { fontFamily: Fonts.body700, fontSize: 16, color: '#fff' },
   createBtnTextDisabled: { color: Colors.accent },
+  errorText: { fontFamily: Fonts.body400, fontSize: 13, color: Colors.neg, marginBottom: 10 },
 });

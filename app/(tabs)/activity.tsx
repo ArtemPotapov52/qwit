@@ -1,4 +1,4 @@
-import { ScrollView, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { ScrollView, View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import { Colors, CAT_META, CatKey } from '@/constants/colors';
@@ -6,50 +6,30 @@ import { useSettingsStore, fs } from '@/store/settings';
 import { Fonts } from '@/constants/fonts';
 import { CatIcon } from '@/components/ui/CatIcon';
 import { fmt } from '@/lib/format';
+import { useActivity, ActivityItem } from '@/hooks/useActivity';
 
-type FeedItem = {
-  kind: 'expense' | 'settle' | 'join';
-  cat?: CatKey;
-  who: string;
-  text: string;
-  group?: string;
-  amount?: number;
-  time: string;
-};
+function formatTime(iso: string): string {
+  return new Date(iso).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+}
 
-const FEED: { day: string; items: FeedItem[] }[] = [
-  { day: 'Сегодня', items: [
-    { kind: 'expense', cat: 'home',  who: 'Аня',  text: 'добавила «Интернет»', group: 'Квартира', amount: 1200, time: '14:20' },
-    { kind: 'settle',                who: 'Вы',   text: 'перевели Косте через СБП', amount: -640, time: '12:05' },
-    { kind: 'expense', cat: 'bowl',  who: 'Костя', text: 'добавил «Рамен»', group: 'Обеды', amount: 1920, time: '11:40' },
-  ]},
-  { day: 'Вчера', items: [
-    { kind: 'expense', cat: 'plane', who: 'Вы',   text: 'добавили «Airbnb»', group: 'Поездка в Питер', amount: 9250, time: '21:10' },
-    { kind: 'join',                  who: 'Лера',  text: 'вступила в «Поездка в Питер»', time: '18:30' },
-    { kind: 'expense', cat: 'cart',  who: 'Маша', text: 'добавила «Продукты на неделю»', group: 'Квартира', amount: 3400, time: '17:02' },
-  ]},
-  { day: '30 мая', items: [
-    { kind: 'settle',                who: 'Лера',  text: 'перевела вам через СБП', amount: 850, time: '09:15' },
-    { kind: 'expense', cat: 'gift',  who: 'Вы',   text: 'добавили «Торт»', group: 'День рождения Маши', amount: 2100, time: '08:40' },
-  ]},
-];
-
-function ItemAvatar({ item }: { item: FeedItem }) {
-  if (item.kind === 'expense' && item.cat) {
-    const meta = CAT_META[item.cat];
+function ItemAvatar({ item }: { item: ActivityItem }) {
+  if (item.type === 'expense_added' && item.group_cat) {
+    const meta = CAT_META[item.group_cat];
     return (
       <View style={[s.avatar, { backgroundColor: meta.bg }]}>
-        <CatIcon cat={item.cat} color={meta.ink} size={20} />
+        <CatIcon cat={item.group_cat} color={meta.ink} size={20} />
       </View>
     );
   }
-  if (item.kind === 'settle') return (
-    <View style={[s.avatar, { backgroundColor: '#E6F6EE' }]}>
-      <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
-        <Path d="M4 9h13l-3-3M20 15H7l3 3" stroke={Colors.pos} strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round"/>
-      </Svg>
-    </View>
-  );
+  if (item.type === 'expense_settled') {
+    return (
+      <View style={[s.avatar, { backgroundColor: '#E6F6EE' }]}>
+        <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+          <Path d="M4 9h13l-3-3M20 15H7l3 3" stroke={Colors.pos} strokeWidth={1.9} strokeLinecap="round" strokeLinejoin="round"/>
+        </Svg>
+      </View>
+    );
+  }
   return (
     <View style={[s.avatar, { backgroundColor: Colors.accentSoft }]}>
       <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
@@ -60,44 +40,77 @@ function ItemAvatar({ item }: { item: FeedItem }) {
   );
 }
 
+function itemText(item: ActivityItem): string {
+  switch (item.type) {
+    case 'expense_added': {
+      const title = (item.payload?.title as string) ?? 'расход';
+      return `добавил(а) «${title}»`;
+    }
+    case 'expense_settled': return 'выполнил(а) перевод';
+    case 'member_joined': return `вступил(а) в группу`;
+    case 'group_created': return 'создал(а) группу';
+    default: return '';
+  }
+}
+
+function itemAmount(item: ActivityItem): number | null {
+  if (item.type === 'expense_added') {
+    const v = item.payload?.amount;
+    return v !== undefined ? Number(v) : null;
+  }
+  return null;
+}
+
 export default function ActivityScreen() {
   const { fontScale } = useSettingsStore();
+  const { data: feed, isLoading } = useActivity();
+
   return (
     <SafeAreaView style={s.container} edges={['top']}>
       <View style={s.header}>
         <Text style={s.headerTitle}>лента</Text>
-        <TouchableOpacity style={s.filterBtn} activeOpacity={0.7}>
-          <Svg width={19} height={19} viewBox="0 0 24 24" fill="none">
-            <Path d="M4 6h16M7 12h10M10 18h4" stroke={Colors.accent} strokeWidth={2} strokeLinecap="round"/>
-          </Svg>
-        </TouchableOpacity>
       </View>
-      <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
-        {FEED.map((sec, si) => (
-          <View key={si}>
-            <Text style={s.dayLabel}>{sec.day}</Text>
-            <View style={s.sectionCard}>
-              {sec.items.map((item, i) => (
-                <View key={i} style={[s.feedRow, i < sec.items.length - 1 && s.feedRowBorder]}>
-                  <ItemAvatar item={item} />
-                  <View style={s.feedInfo}>
-                    <Text style={[s.feedText, { fontSize: fs(13.5, fontScale) }]}>
-                      <Text style={s.feedWho}>{item.who}</Text>
-                      {' '}{item.text}
-                    </Text>
-                    <Text style={[s.feedMeta, { fontSize: fs(11.5, fontScale) }]}>{item.group ? `${item.group} · ${item.time}` : item.time}</Text>
-                  </View>
-                  {item.amount !== undefined && (
-                    <Text style={[s.feedAmt, { color: item.kind === 'settle' ? (item.amount > 0 ? Colors.pos : Colors.sub) : Colors.ink }]}>
-                      {item.kind === 'settle' ? fmt(item.amount) : fmt(item.amount, false)}
-                    </Text>
-                  )}
-                </View>
-              ))}
+
+      {isLoading ? (
+        <View style={s.center}>
+          <ActivityIndicator color={Colors.accent} />
+        </View>
+      ) : !feed?.length ? (
+        <View style={s.center}>
+          <Text style={s.emptyTitle}>Пока ничего нет</Text>
+          <Text style={s.emptyBody}>Создайте группу и добавьте первый расход</Text>
+        </View>
+      ) : (
+        <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
+          {feed.map((sec) => (
+            <View key={sec.day}>
+              <Text style={s.dayLabel}>{sec.day}</Text>
+              <View style={s.sectionCard}>
+                {sec.items.map((item, i) => {
+                  const amount = itemAmount(item);
+                  return (
+                    <View key={item.id} style={[s.feedRow, i < sec.items.length - 1 && s.feedRowBorder]}>
+                      <ItemAvatar item={item} />
+                      <View style={s.feedInfo}>
+                        <Text style={[s.feedText, { fontSize: fs(13.5, fontScale) }]}>
+                          <Text style={s.feedWho}>{item.actor_name}</Text>
+                          {' '}{itemText(item)}
+                        </Text>
+                        <Text style={[s.feedMeta, { fontSize: fs(11.5, fontScale) }]}>
+                          {item.group_name ? `${item.group_name} · ` : ''}{formatTime(item.created_at)}
+                        </Text>
+                      </View>
+                      {amount !== null && (
+                        <Text style={s.feedAmt}>{fmt(amount, false)}</Text>
+                      )}
+                    </View>
+                  );
+                })}
+              </View>
             </View>
-          </View>
-        ))}
-      </ScrollView>
+          ))}
+        </ScrollView>
+      )}
     </SafeAreaView>
   );
 }
@@ -110,11 +123,10 @@ const s = StyleSheet.create({
     backgroundColor: Colors.page,
   },
   headerTitle: { fontFamily: Fonts.brand700, fontSize: 24, color: Colors.ink, letterSpacing: -1.2 },
-  filterBtn: {
-    width: 38, height: 38, borderRadius: 999, backgroundColor: Colors.accentSoft,
-    alignItems: 'center', justifyContent: 'center',
-  },
   scroll: { paddingHorizontal: 18, paddingBottom: 24 },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32, gap: 8 },
+  emptyTitle: { fontFamily: Fonts.brand700, fontSize: 18, color: Colors.ink, letterSpacing: -0.6, textAlign: 'center' },
+  emptyBody: { fontFamily: Fonts.body400, fontSize: 14, color: Colors.sub, textAlign: 'center', lineHeight: 20 },
   dayLabel: {
     fontFamily: Fonts.brand600, fontSize: 13, color: Colors.faint, textTransform: 'lowercase',
     letterSpacing: -0.3, marginTop: 20, marginBottom: 10, marginLeft: 2,
@@ -130,5 +142,5 @@ const s = StyleSheet.create({
   feedText: { fontFamily: Fonts.body400, fontSize: 13.5, color: Colors.ink, lineHeight: 18 },
   feedWho: { fontFamily: Fonts.body600 },
   feedMeta: { fontFamily: Fonts.body400, fontSize: 11.5, color: Colors.faint, marginTop: 2 },
-  feedAmt: { fontFamily: Fonts.body700, fontSize: 15 },
+  feedAmt: { fontFamily: Fonts.body700, fontSize: 15, color: Colors.ink },
 });

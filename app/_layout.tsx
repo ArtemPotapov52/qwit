@@ -1,5 +1,6 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
 import {
@@ -49,6 +50,7 @@ function AuthGuard() {
 
 export default function RootLayout() {
   const { loadSettings } = useSettingsStore();
+  const queryClientRef = useRef(new QueryClient());
 
   useEffect(() => { loadSettings(); }, []);
 
@@ -70,13 +72,15 @@ export default function RootLayout() {
   if (!fontsLoaded) return null;
 
   return (
-    <>
+    <QueryClientProvider client={queryClientRef.current}>
       <StatusBar style="dark" />
       <AuthGuard />
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#FAFAF8' } }}>
         <Stack.Screen name="(auth)" />
         <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="group/[id]" />
+        <Stack.Screen name="settings" />
       </Stack>
-    </>
+    </QueryClientProvider>
   );
 }

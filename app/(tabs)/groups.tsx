@@ -1,23 +1,22 @@
-import { ScrollView, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { ScrollView, View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import { Colors, CAT_META, CatKey } from '@/constants/colors';
 import { Fonts } from '@/constants/fonts';
 import { CatIcon } from '@/components/ui/CatIcon';
 import { fmt } from '@/lib/format';
 import { useAuthStore } from '@/store/auth';
 import { useSettingsStore, fs } from '@/store/settings';
+import { useGroups, GroupItem } from '@/hooks/useGroups';
+import { useProfile } from '@/hooks/useProfile';
 
-const GROUPS = [
-  { cat: 'home' as CatKey,  name: 'Квартира · Чистые пруды', sub: '4 участника',   last: 'Аня добавила «Интернет»',  amount: 4200 },
-  { cat: 'plane' as CatKey, name: 'Поездка в Питер',          sub: '5 участников', last: 'Вы добавили «Airbnb»',      amount: -1850 },
-  { cat: 'bowl' as CatKey,  name: 'Обеды на работе',          sub: '3 участника',  last: 'Костя добавил «Рамен»',     amount: 640 },
-  { cat: 'gift' as CatKey,  name: 'День рождения Маши',       sub: '6 участников', last: 'Всё рассчитано',            amount: 0 },
-];
+const FREE_GROUP_LIMIT = 3;
 
-function GroupRow({ g, scale }: { g: typeof GROUPS[number]; scale: number }) {
-  const meta = CAT_META[g.cat];
+function GroupRow({ g, scale }: { g: GroupItem; scale: number }) {
+  const router = useRouter();
+  const meta = CAT_META[g.cat] ?? CAT_META['home'];
   return (
-    <TouchableOpacity style={s.card} activeOpacity={0.7}>
+    <TouchableOpacity style={s.card} activeOpacity={0.7} onPress={() => router.push(`/group/${g.id}` as any)}>
       <View style={[s.catTile, { backgroundColor: meta.bg }]}>
         <CatIcon cat={g.cat} color={meta.ink} />
       </View>
@@ -43,7 +42,13 @@ function GroupRow({ g, scale }: { g: typeof GROUPS[number]; scale: number }) {
 export default function GroupsScreen() {
   const { user } = useAuthStore();
   const { fontScale } = useSettingsStore();
-  const letter = (user?.phone ?? 'Т')[0]?.toUpperCase() ?? 'Т';
+  const { data: profile } = useProfile();
+  const { data: groups, isLoading } = useGroups();
+  const letter = (profile?.display_name ?? user?.email ?? 'Я')[0]?.toUpperCase() ?? 'Я';
+
+  const totalOwed = (groups ?? []).reduce((s, g) => g.amount > 0 ? s + g.amount : s, 0);
+  const totalOwe = (groups ?? []).reduce((s, g) => g.amount < 0 ? s + g.amount : s, 0);
+  const net = totalOwed + totalOwe;
 
   return (
     <SafeAreaView style={s.container} edges={['top']}>
@@ -56,17 +61,15 @@ export default function GroupsScreen() {
         {/* Hero */}
         <View style={[s.hero, s.heroShadow]}>
           <Text style={s.heroLabel}>ИТОГО ВАМ ДОЛЖНЫ</Text>
-          <Text style={s.heroAmount}>{fmt(2990)}</Text>
-          <View style={s.heroDivider} />
+          <Text style={s.heroAmount}>{fmt(net, false)}</Text>
           <View style={s.heroRow}>
             <View style={s.heroCol}>
               <Text style={s.heroColLabel}>вам должны</Text>
-              <Text style={s.heroColNum}>{fmt(4840)}</Text>
+              <Text style={s.heroColNum}>{fmt(totalOwed, false)}</Text>
             </View>
-            <View style={s.heroVertLine} />
             <View style={s.heroCol}>
               <Text style={s.heroColLabel}>вы должны</Text>
-              <Text style={s.heroColNum}>{fmt(-1850)}</Text>
+              <Text style={s.heroColNum}>{fmt(Math.abs(totalOwe), false)}</Text>
             </View>
           </View>
         </View>
@@ -74,11 +77,21 @@ export default function GroupsScreen() {
         {/* Section */}
         <View style={s.sectionHeader}>
           <Text style={[s.sectionTitle, { fontSize: fs(18, fontScale) }]}>ваши группы</Text>
-          <TouchableOpacity><Text style={s.sectionAction}>Все</Text></TouchableOpacity>
         </View>
-        <View style={s.list}>
-          {GROUPS.map((g, i) => <GroupRow key={i} g={g} scale={fontScale} />)}
-        </View>
+
+        {isLoading ? (
+          <View style={s.center}>
+            <ActivityIndicator color={Colors.accent} />
+          </View>
+        ) : !groups?.length ? (
+          <View style={s.empty}>
+            <Text style={s.emptyText}>Нет групп. Создайте первую — нажмите «+»</Text>
+          </View>
+        ) : (
+          <View style={s.list}>
+            {groups.map((g) => <GroupRow key={g.id} g={g} scale={fontScale} />)}
+          </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -114,17 +127,19 @@ const s = StyleSheet.create({
     fontFamily: Fonts.brand700, fontSize: 40, color: '#fff', letterSpacing: -0.5,
     marginTop: 6, lineHeight: 44,
   },
-  heroDivider: { height: 1, backgroundColor: 'rgba(255,255,255,0.24)', marginTop: 18, marginBottom: 16 },
-  heroRow: { flexDirection: 'row' },
+  heroRow: { flexDirection: 'row', marginTop: 18 },
   heroCol: { flex: 1 },
-  heroVertLine: { width: 1, backgroundColor: 'rgba(255,255,255,0.24)' },
   heroColLabel: { fontFamily: Fonts.body400, fontSize: 11.5, color: 'rgba(255,255,255,0.82)', marginBottom: 4 },
   heroColNum: { fontFamily: Fonts.body700, fontSize: 17, color: '#fff' },
 
   // Section
   sectionHeader: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', marginTop: 22, marginBottom: 12 },
   sectionTitle: { fontFamily: Fonts.brand700, fontSize: 18, color: Colors.ink, letterSpacing: -0.9, textTransform: 'lowercase' },
-  sectionAction: { fontFamily: Fonts.body600, fontSize: 13, color: Colors.accent },
+
+  // States
+  center: { paddingTop: 40, alignItems: 'center' },
+  empty: { paddingTop: 40, alignItems: 'center', paddingHorizontal: 24 },
+  emptyText: { fontFamily: Fonts.body400, fontSize: 14, color: Colors.sub, textAlign: 'center', lineHeight: 22 },
 
   // Group card
   list: { gap: 10 },

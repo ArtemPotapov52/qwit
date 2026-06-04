@@ -4,12 +4,13 @@ import {
   Platform, ActivityIndicator, StyleSheet, Pressable,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
+import { useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/store/auth';
 import { Colors } from '@/constants/colors';
 import { Fonts } from '@/constants/fonts';
 
-type Step = 'welcome' | 'phone' | 'otp' | 'name';
+type Step = 'welcome' | 'email' | 'otp' | 'name';
 type Mode = 'login' | 'register';
 
 function BackBtn({ onPress }: { onPress: () => void }) {
@@ -37,39 +38,38 @@ function PrimaryBtn({ label, onPress, disabled, loading }: { label: string; onPr
   );
 }
 
-function formatPhone(raw: string): string {
-  const d = raw.replace(/\D/g, '').slice(0, 10);
-  if (!d) return '';
-  let r = d.slice(0, 3);
-  if (d.length > 3) r += ' ' + d.slice(3, 6);
-  if (d.length > 6) r += '-' + d.slice(6, 8);
-  if (d.length > 8) r += '-' + d.slice(8, 10);
-  return r;
+function isValidEmail(v: string) {
+  return v.includes('@') && v.includes('.') && v.length > 4;
 }
 
 export default function AuthScreen() {
   const [step, setStep] = useState<Step>('welcome');
   const [mode, setMode] = useState<Mode>('login');
-  const [phone, setPhone] = useState('');
-  const [otp, setOtp] = useState(['', '', '', '']);
+  const [email, setEmail] = useState('');
+  const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const { enterGuestMode } = useAuthStore();
+  const router = useRouter();
 
-  const otpRefs = [useRef<TextInput>(null), useRef<TextInput>(null), useRef<TextInput>(null), useRef<TextInput>(null)];
+  const handleDevLogin = () => {
+    enterGuestMode();
+  };
+
+  const otpRefs = [
+    useRef<TextInput>(null), useRef<TextInput>(null), useRef<TextInput>(null),
+    useRef<TextInput>(null), useRef<TextInput>(null), useRef<TextInput>(null),
+  ];
 
   useEffect(() => {
     if (step === 'otp') setTimeout(() => otpRefs[0].current?.focus(), 120);
   }, [step]);
 
-  const phoneDigits = phone.replace(/\D/g, '');
-  const fullPhone = `+7${phoneDigits}`;
-
   const handleSendOtp = async () => {
     setError('');
     setLoading(true);
-    const { error } = await supabase.auth.signInWithOtp({ phone: fullPhone });
+    const { error } = await supabase.auth.signInWithOtp({ email });
     setLoading(false);
     if (error) { setError(error.message); return; }
     setStep('otp');
@@ -78,15 +78,15 @@ export default function AuthScreen() {
   const handleOtpChange = (val: string, i: number) => {
     const digit = val.replace(/\D/g, '').slice(-1);
     const next = [...otp]; next[i] = digit; setOtp(next);
-    if (digit && i < 3) otpRefs[i + 1].current?.focus();
+    if (digit && i < 5) otpRefs[i + 1].current?.focus();
     if (next.every(d => d)) {
       setTimeout(async () => {
         const token = next.join('');
         setLoading(true);
-        const { error } = await supabase.auth.verifyOtp({ phone: fullPhone, token, type: 'sms' });
+        const { error } = await supabase.auth.verifyOtp({ email, token, type: 'email' });
         setLoading(false);
         if (error) {
-          setError('Неверный код'); setOtp(['', '', '', '']); otpRefs[0].current?.focus();
+          setError('Неверный код'); setOtp(['', '', '', '', '', '']); otpRefs[0].current?.focus();
           return;
         }
         if (mode === 'register') setStep('name');
@@ -103,16 +103,26 @@ export default function AuthScreen() {
   };
 
   const handleNameDone = async () => {
-    // Profile update after auth — session already set
-    // supabase.from('profiles').update({ display_name: name.trim() }) can be called here
+    if (!validName) return;
+    setLoading(true);
+    try {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (authUser) {
+        const trimmed = name.trim();
+        await Promise.all([
+          supabase.from('profiles').update({ display_name: trimmed }).eq('id', authUser.id),
+          supabase.auth.updateUser({ data: { display_name: trimmed } }),
+        ]);
+      }
+    } catch {}
+    setLoading(false);
+    router.replace('/(tabs)/groups' as any);
   };
 
-  // ── Welcome (Вариант E — Акцент-тип) ──────────────────────
+  // ── Welcome ───────────────────────────────────────────────
   if (step === 'welcome') return (
     <View style={s.container}>
-      {/* Огромная буква-фон */}
       <Text style={s.bgLetter} aria-hidden>q</Text>
-      {/* Контент — прижат к низу */}
       <View style={s.welcomeContent}>
         <View style={s.welcomeTag}>
           <Text style={s.welcomeTagText}>QWIT · РОССИЯ</Text>
@@ -122,42 +132,42 @@ export default function AuthScreen() {
           <Text style={s.welcomeHeadlineAccent}>{'под\nконтролем'}</Text>
         </Text>
         <Text style={s.welcomeBody}>Делите с друзьями. Считает автоматически. Переводит через СБП.</Text>
-        <TouchableOpacity onPress={() => { setMode('register'); setStep('phone'); }} style={[s.primaryBtn, s.primaryBtnShadow]} activeOpacity={0.85}>
+        <TouchableOpacity onPress={() => { setMode('register'); setStep('email'); }} style={[s.primaryBtn, s.primaryBtnShadow]} activeOpacity={0.85}>
           <Text style={s.primaryBtnText}>Создать аккаунт</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => { setMode('login'); setStep('phone'); }} style={s.secondaryBtn} activeOpacity={0.85}>
+        <TouchableOpacity onPress={() => { setMode('login'); setStep('email'); }} style={s.secondaryBtn} activeOpacity={0.85}>
           <Text style={s.secondaryBtnText}>Войти</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={enterGuestMode} style={s.skipBtn} activeOpacity={0.6}>
+        <TouchableOpacity onPress={handleDevLogin} style={s.skipBtn} activeOpacity={0.6}>
           <Text style={s.skipText}>Пропустить →</Text>
         </TouchableOpacity>
       </View>
     </View>
   );
 
-  // ── Phone ─────────────────────────────────────────────────
-  if (step === 'phone') return (
+  // ── Email ─────────────────────────────────────────────────
+  if (step === 'email') return (
     <KeyboardAvoidingView style={s.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <View style={s.stepInner}>
         <View style={s.backRow}><BackBtn onPress={() => setStep('welcome')} /></View>
-        <Text style={s.stepTitle}>{mode === 'register' ? 'Введите номер' : 'Добро пожаловать'}</Text>
-        <Text style={s.stepSub}>{mode === 'register' ? 'Пришлём код подтверждения по SMS' : 'Войдите с помощью номера телефона'}</Text>
-        <View style={s.phoneRow}>
-          <Text style={s.phonePrefix}>+7</Text>
-          <View style={s.phoneDivider}/>
+        <Text style={s.stepTitle}>{mode === 'register' ? 'Введите email' : 'Добро пожаловать'}</Text>
+        <Text style={s.stepSub}>{mode === 'register' ? 'Пришлём код подтверждения на почту' : 'Войдите с помощью email'}</Text>
+        <View style={s.inputWrap}>
           <TextInput
-            style={s.phoneInput}
-            value={phone}
-            onChangeText={v => setPhone(formatPhone(v))}
-            placeholder="900 000-00-00"
+            style={s.textInput}
+            value={email}
+            onChangeText={v => setEmail(v.trim())}
+            placeholder="your@email.com"
             placeholderTextColor={Colors.faint}
-            keyboardType="phone-pad"
+            keyboardType="email-address"
+            autoCapitalize="none"
+            autoComplete="email"
             autoFocus
-            onSubmitEditing={() => phoneDigits.length === 10 && handleSendOtp()}
+            onSubmitEditing={() => isValidEmail(email) && handleSendOtp()}
           />
         </View>
         {error ? <Text style={s.error}>{error}</Text> : null}
-        <PrimaryBtn label="Продолжить" onPress={handleSendOtp} disabled={phoneDigits.length < 10} loading={loading} />
+        <PrimaryBtn label="Продолжить" onPress={handleSendOtp} disabled={!isValidEmail(email)} loading={loading} />
       </View>
     </KeyboardAvoidingView>
   );
@@ -166,9 +176,9 @@ export default function AuthScreen() {
   if (step === 'otp') return (
     <KeyboardAvoidingView style={s.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <View style={s.stepInner}>
-        <View style={s.backRow}><BackBtn onPress={() => setStep('phone')} /></View>
-        <Text style={s.stepTitle}>Код из SMS</Text>
-        <Text style={s.stepSub}>Отправили на{' '}<Text style={{ color: Colors.ink, fontFamily: Fonts.body600 }}>+7 {phone}</Text></Text>
+        <View style={s.backRow}><BackBtn onPress={() => setStep('email')} /></View>
+        <Text style={s.stepTitle}>Код из письма</Text>
+        <Text style={s.stepSub}>Отправили на{' '}<Text style={{ color: Colors.ink, fontFamily: Fonts.body600 }}>{email}</Text></Text>
         <View style={s.otpRow}>
           {otp.map((d, i) => (
             <TextInput
@@ -188,7 +198,7 @@ export default function AuthScreen() {
         {loading && <ActivityIndicator color={Colors.accent} style={{ marginVertical: 8 }} />}
         <Text style={s.resendText}>
           Не пришёл код?{'  '}
-          <Text style={s.resendLink} onPress={() => supabase.auth.signInWithOtp({ phone: fullPhone })}>Отправить снова</Text>
+          <Text style={s.resendLink} onPress={() => supabase.auth.signInWithOtp({ email })}>Отправить снова</Text>
         </Text>
         <TouchableOpacity onPress={() => { if (mode === 'register') setStep('name'); }} style={s.skipBtn}>
           <Text style={s.skipText}>пропустить (демо)</Text>
@@ -225,7 +235,7 @@ export default function AuthScreen() {
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.page },
 
-  // Welcome — Вариант E
+  // Welcome
   bgLetter: {
     position: 'absolute', top: 28, left: -18,
     fontFamily: Fonts.brand700, fontSize: 320, lineHeight: 320,
@@ -276,27 +286,13 @@ const s = StyleSheet.create({
   stepTitle: { fontFamily: Fonts.brand700, fontSize: 28, color: Colors.ink, letterSpacing: -1.2, marginBottom: 8 },
   stepSub: { fontFamily: Fonts.body400, fontSize: 14, color: Colors.sub, marginBottom: 32, lineHeight: 21 },
 
-  // Phone input
-  phoneRow: {
-    flexDirection: 'row', alignItems: 'center', gap: 10,
-    backgroundColor: Colors.surface, borderRadius: 14, paddingHorizontal: 16,
-    shadowColor: '#101114', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 2,
-    marginBottom: 14,
-  },
-  phonePrefix: { fontFamily: Fonts.body400, fontSize: 16, color: Colors.sub },
-  phoneDivider: { width: 1, height: 20, backgroundColor: Colors.line },
-  phoneInput: {
-    flex: 1, fontFamily: Fonts.body400, fontSize: 16, color: Colors.ink,
-    paddingVertical: 16, letterSpacing: 0.5,
-  },
-
   // OTP
-  otpRow: { flexDirection: 'row', gap: 10, justifyContent: 'center', marginBottom: 24 },
+  otpRow: { flexDirection: 'row', gap: 8, justifyContent: 'center', marginBottom: 24 },
   otpCell: {
-    width: 62, height: 70, borderRadius: 16,
+    width: 48, height: 58, borderRadius: 14,
     borderWidth: 2, borderColor: Colors.line,
     backgroundColor: Colors.surface, textAlign: 'center',
-    fontFamily: Fonts.brand700, fontSize: 28, color: Colors.ink,
+    fontFamily: Fonts.brand700, fontSize: 26, color: Colors.ink,
   },
   otpCellFilled: { borderColor: Colors.accent },
   resendText: { textAlign: 'center', fontFamily: Fonts.body400, fontSize: 13, color: Colors.sub, marginBottom: 20 },

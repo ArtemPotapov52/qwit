@@ -1,12 +1,15 @@
 import { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { Tabs, useRouter } from 'expo-router';
 import Svg, { Path } from 'react-native-svg';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '@/constants/colors';
 import { Fonts } from '@/constants/fonts';
 import { NavIcon } from '@/components/ui/NavIcon';
 import { NewGroupSheet } from '@/components/ui/NewGroupSheet';
+import { useAuthStore } from '@/store/auth';
+import { useGroups } from '@/hooks/useGroups';
+
+const FREE_GROUP_LIMIT = 3;
 
 const TABS = [
   { id: 'groups', label: 'Группы' },
@@ -59,6 +62,24 @@ function BottomNav({ active, onChange, onAdd }: {
 export default function TabsLayout() {
   const [newGroupOpen, setNewGroupOpen] = useState(false);
   const router = useRouter();
+  const { isPremium } = useAuthStore();
+  const { data: groups } = useGroups();
+
+  const handleAdd = () => {
+    const count = groups?.length ?? 0;
+    if (!isPremium && count >= FREE_GROUP_LIMIT) {
+      Alert.alert(
+        'Лимит достигнут',
+        `Бесплатный план позволяет создать не более ${FREE_GROUP_LIMIT} групп. Подключите Premium для безлимитного доступа.`,
+        [
+          { text: 'Позже', style: 'cancel' },
+          { text: 'Узнать о Premium', onPress: () => Alert.alert('Скоро!', 'Следи за обновлениями') },
+        ],
+      );
+      return;
+    }
+    setNewGroupOpen(true);
+  };
 
   return (
     <Tabs
@@ -69,7 +90,7 @@ export default function TabsLayout() {
             <BottomNav
               active={active}
               onChange={(id) => router.navigate(`/(tabs)/${id}` as any)}
-              onAdd={() => setNewGroupOpen(true)}
+              onAdd={handleAdd}
             />
             <NewGroupSheet
               open={newGroupOpen}
