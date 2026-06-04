@@ -22,6 +22,9 @@ export function useCreateGroup() {
 
       if (!user?.id) throw new Error('Не авторизован');
 
+      // Гарантируем профиль (анонимный пользователь может войти раньше триггера)
+      await supabase.from('profiles').upsert({ id: user.id }, { onConflict: 'id', ignoreDuplicates: true });
+
       const { data: group, error: groupErr } = await supabase
         .from('groups')
         .insert({ name, category: cat, created_by: user.id })
