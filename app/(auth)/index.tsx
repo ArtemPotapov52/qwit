@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, KeyboardAvoidingView,
-  Platform, ActivityIndicator, StyleSheet,
+  Platform, ActivityIndicator, StyleSheet, Keyboard,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { supabase } from '@/lib/supabase';
@@ -60,6 +60,7 @@ export default function AuthScreen() {
 
   // ── Войти ─────────────────────────────────────────────────
   const handleLogin = async () => {
+    Keyboard.dismiss();
     setError(''); setLoading(true);
     const { error: err } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
@@ -72,6 +73,7 @@ export default function AuthScreen() {
   // ── Зарегистрировать + сохранить профиль за один раз ──────
   const handleSignUp = async () => {
     if (name.trim().length < 2) return;
+    Keyboard.dismiss();
     setError(''); setLoading(true);
 
     const { data, error: signUpErr } = await supabase.auth.signUp({ email, password });

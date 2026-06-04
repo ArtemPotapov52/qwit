@@ -60,8 +60,8 @@ export default function GroupsScreen() {
       <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
         {/* Hero */}
         <View style={[s.hero, s.heroShadow]}>
-          <Text style={s.heroLabel}>ИТОГО ВАМ ДОЛЖНЫ</Text>
-          <Text style={s.heroAmount}>{fmt(net, false)}</Text>
+          <Text style={s.heroLabel}>{net >= 0 ? 'ИТОГО ВАМ ДОЛЖНЫ' : 'ИТОГО ВЫ ДОЛЖНЫ'}</Text>
+          <Text style={s.heroAmount}>{fmt(Math.abs(net), false)}</Text>
           <View style={s.heroRow}>
             <View style={s.heroCol}>
               <Text style={s.heroColLabel}>вам должны</Text>

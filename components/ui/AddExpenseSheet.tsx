@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, Animated,
   Modal, StyleSheet, ScrollView, Pressable, ActivityIndicator,
-  KeyboardAvoidingView, Platform,
+  KeyboardAvoidingView, Platform, Keyboard,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { Colors } from '@/constants/colors';
@@ -55,6 +55,7 @@ export function AddExpenseSheet({ open, onClose, onCreated, groupId, members }: 
 
   const handleCreate = () => {
     if (!canCreate || isPending) return;
+    Keyboard.dismiss();
     setError('');
     addExpense(
       { groupId, title: title.trim(), amount, paidById, memberIds },

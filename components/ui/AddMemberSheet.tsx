@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, Animated,
   Modal, StyleSheet, Pressable, ActivityIndicator,
-  KeyboardAvoidingView, Platform, ScrollView,
+  KeyboardAvoidingView, Platform, ScrollView, Keyboard,
 } from 'react-native';
 import Svg, { Path, Circle } from 'react-native-svg';
 import { Colors } from '@/constants/colors';
@@ -49,9 +49,14 @@ export function AddMemberSheet({ open, onClose, groupId }: Props) {
     if (query.trim().length < 3) { setSuggestions([]); return; }
     timerRef.current = setTimeout(async () => {
       setSearching(true);
-      const results = await searchUsersByPartial(query.trim());
-      setSuggestions(results);
-      setSearching(false);
+      try {
+        const results = await searchUsersByPartial(query.trim());
+        setSuggestions(results);
+      } catch {
+        setSuggestions([]);
+      } finally {
+        setSearching(false);
+      }
     }, 300);
     return () => { if (timerRef.current) clearTimeout(timerRef.current); };
   }, [query]);
@@ -65,6 +70,7 @@ export function AddMemberSheet({ open, onClose, groupId }: Props) {
 
   const handleAdd = () => {
     if (!selected || isPending) return;
+    Keyboard.dismiss();
     setError('');
     addMember(selected.id, {
       onSuccess: () => onClose(),

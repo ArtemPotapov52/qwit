@@ -16,10 +16,7 @@ export function userCodeFromId(id: string): string {
 export async function searchUsersByPartial(query: string): Promise<FoundUser[]> {
   if (query.trim().length < 3) return [];
   const { data, error } = await supabase
-    .from('profiles')
-    .select('id, display_name')
-    .ilike('id', `%${query.toLowerCase()}%`)
-    .limit(5);
+    .rpc('search_profiles', { query: query.trim().toLowerCase() });
   if (error || !data) return [];
   return (data as { id: string; display_name: string | null }[]).map(row => ({
     id: row.id,

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, Animated,
   Modal, StyleSheet, ScrollView, Pressable, ActivityIndicator,
-  KeyboardAvoidingView, Platform,
+  KeyboardAvoidingView, Platform, Keyboard,
 } from 'react-native';
 import Svg, { Path, Circle } from 'react-native-svg';
 import { Colors, CAT_META, CatKey } from '@/constants/colors';
@@ -141,6 +141,7 @@ export function NewGroupSheet({ open, onClose, onCreated }: Props) {
               <TouchableOpacity
                 onPress={() => {
                   if (!canCreate || isPending) return;
+                  Keyboard.dismiss();
                   setCreateError('');
                   createGroup(
                     { cat, name: groupName.trim() },
