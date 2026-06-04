@@ -36,6 +36,7 @@ async function fetchStats(userId: string, period: 'month' | 'year'): Promise<Sta
     periodLabel = String(now.getFullYear());
   }
 
+  // Load group metadata for current user's groups
   const { data: memberships } = await supabase
     .from('group_members')
     .select('group_id, groups ( id, name, category )')
@@ -45,29 +46,32 @@ async function fetchStats(userId: string, period: 'month' | 'year'): Promise<Sta
     return { categories: [], groups: [], total: 0, periodLabel, expenseCount: 0 };
   }
 
-  const groupIds = memberships.map(m => (m as any).group_id as string);
   const groupInfoMap: Record<string, { name: string; cat: CatKey }> = {};
   for (const m of memberships) {
     const g = (m as any).groups;
     if (g) groupInfoMap[(m as any).group_id] = { name: g.name, cat: (g.category ?? 'home') as CatKey };
   }
 
-  const { data: expenses, error } = await supabase
-    .from('expenses')
-    .select('group_id, amount')
-    .in('group_id', groupIds)
-    .gte('date', fromDate);
+  // Only count the current user's personal share (expense_splits.user_id = me)
+  // This correctly attributes: if Anya paid → only Anya's split counts for Anya
+  const { data: splits, error } = await supabase
+    .from('expense_splits')
+    .select('amount, expenses!inner( date, group_id )')
+    .eq('user_id', userId)
+    .gte('expenses.date', fromDate);
 
   if (error) throw error;
-  if (!expenses?.length) {
+  if (!splits?.length) {
     return { categories: [], groups: [], total: 0, periodLabel, expenseCount: 0 };
   }
 
   const groupAmounts: Record<string, number> = {};
   let total = 0;
-  for (const e of expenses) {
-    const gid = (e as any).group_id as string;
-    const amt = Number((e as any).amount);
+  for (const s of splits) {
+    const exp = (s as any).expenses;
+    const gid = exp?.group_id as string;
+    const amt = Number((s as any).amount);
+    if (!gid || !groupInfoMap[gid]) continue;
     groupAmounts[gid] = (groupAmounts[gid] ?? 0) + amt;
     total += amt;
   }
@@ -92,7 +96,7 @@ async function fetchStats(userId: string, period: 'month' | 'year'): Promise<Sta
     .sort((a, b) => b.amount - a.amount)
     .slice(0, 5);
 
-  return { categories, groups, total, periodLabel, expenseCount: expenses.length };
+  return { categories, groups, total, periodLabel, expenseCount: splits.length };
 }
 
 export function useStats(period: 'month' | 'year') {

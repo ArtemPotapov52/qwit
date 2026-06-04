@@ -1,21 +1,33 @@
 import { useEffect, useRef } from 'react';
-import { View, Text, Switch, TouchableOpacity, Animated, Modal, StyleSheet, Pressable, KeyboardAvoidingView, Platform } from 'react-native';
+import {
+  View, Text, Switch, TouchableOpacity, Animated, Modal,
+  StyleSheet, Pressable, KeyboardAvoidingView, Platform, Alert, ActivityIndicator,
+} from 'react-native';
+import { useState } from 'react';
 import Svg, { Path } from 'react-native-svg';
 import { Colors } from '@/constants/colors';
 import { Fonts } from '@/constants/fonts';
 import { useGroupSettingsStore } from '@/store/groupSettings';
+import { supabase } from '@/lib/supabase';
+import { useAuthStore } from '@/store/auth';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface Props {
   open: boolean;
   onClose: () => void;
   groupId: string;
   groupName: string;
+  isAdmin: boolean;
+  onLeft: () => void;   // navigate away after leave/delete
 }
 
-export function GroupSettingsSheet({ open, onClose, groupId, groupName }: Props) {
+export function GroupSettingsSheet({ open, onClose, groupId, groupName, isAdmin, onLeft }: Props) {
   const slideAnim = useRef(new Animated.Value(360)).current;
   const overlayAnim = useRef(new Animated.Value(0)).current;
   const { get, update, load, loaded } = useGroupSettingsStore();
+  const [leaving, setLeaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const qc = useQueryClient();
 
   useEffect(() => {
     if (!loaded) load();
@@ -36,6 +48,66 @@ export function GroupSettingsSheet({ open, onClose, groupId, groupName }: Props)
   }, [open]);
 
   const settings = get(groupId);
+  const uid = useAuthStore.getState().user?.id;
+
+  const handleLeave = () => {
+    Alert.alert(
+      'Покинуть группу?',
+      `Вы выйдете из «${groupName}». Ваши расходы сохранятся.`,
+      [
+        { text: 'Отмена', style: 'cancel' },
+        {
+          text: 'Покинуть',
+          style: 'destructive',
+          onPress: async () => {
+            setLeaving(true);
+            const { error } = await supabase
+              .from('group_members')
+              .delete()
+              .eq('group_id', groupId)
+              .eq('user_id', uid!);
+            setLeaving(false);
+            if (error) {
+              Alert.alert('Ошибка', error.message);
+              return;
+            }
+            const userId = useAuthStore.getState().user?.id;
+            qc.invalidateQueries({ queryKey: ['groups', userId] });
+            onLeft();
+          },
+        },
+      ]
+    );
+  };
+
+  const handleDelete = () => {
+    Alert.alert(
+      'Удалить группу?',
+      `«${groupName}» будет удалена вместе со всеми расходами. Это действие необратимо.`,
+      [
+        { text: 'Отмена', style: 'cancel' },
+        {
+          text: 'Удалить',
+          style: 'destructive',
+          onPress: async () => {
+            setDeleting(true);
+            const { error } = await supabase
+              .from('groups')
+              .delete()
+              .eq('id', groupId);
+            setDeleting(false);
+            if (error) {
+              Alert.alert('Ошибка', error.message);
+              return;
+            }
+            const userId = useAuthStore.getState().user?.id;
+            qc.invalidateQueries({ queryKey: ['groups', userId] });
+            onLeft();
+          },
+        },
+      ]
+    );
+  };
 
   return (
     <Modal visible={open} transparent animationType="none" onRequestClose={onClose}>
@@ -80,16 +152,40 @@ export function GroupSettingsSheet({ open, onClose, groupId, groupName }: Props)
 
               <View style={s.divider} />
 
-              {/* Leave group placeholder */}
-              <View style={s.row}>
+              {/* Leave group */}
+              <TouchableOpacity style={s.row} onPress={handleLeave} disabled={leaving} activeOpacity={0.7}>
                 <View style={[s.rowIcon, { backgroundColor: '#FEF0F0' }]}>
-                  <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
-                    <Path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" stroke={Colors.neg} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"/>
-                  </Svg>
+                  {leaving
+                    ? <ActivityIndicator color={Colors.neg} size="small" />
+                    : <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+                        <Path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" stroke={Colors.neg} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"/>
+                      </Svg>
+                  }
                 </View>
                 <Text style={[s.rowLabel, { color: Colors.neg }]}>Покинуть группу</Text>
-                <Text style={s.soon}>Скоро</Text>
-              </View>
+              </TouchableOpacity>
+
+              {/* Delete group — only for admin */}
+              {isAdmin && (
+                <>
+                  <View style={s.divider} />
+                  <TouchableOpacity style={s.row} onPress={handleDelete} disabled={deleting} activeOpacity={0.7}>
+                    <View style={[s.rowIcon, { backgroundColor: '#FEF0F0' }]}>
+                      {deleting
+                        ? <ActivityIndicator color={Colors.neg} size="small" />
+                        : <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+                            <Path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" stroke={Colors.neg} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"/>
+                            <Path d="M10 11v6M14 11v6" stroke={Colors.neg} strokeWidth={1.8} strokeLinecap="round"/>
+                          </Svg>
+                      }
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[s.rowLabel, { color: Colors.neg }]}>Удалить группу</Text>
+                      <Text style={s.rowSub}>Удалит все расходы и участников</Text>
+                    </View>
+                  </TouchableOpacity>
+                </>
+              )}
             </View>
 
             <Text style={s.footer}>Настройки сохраняются только на этом устройстве</Text>
@@ -124,6 +220,5 @@ const s = StyleSheet.create({
   rowLabel: { fontFamily: Fonts.body500, fontSize: 14, color: Colors.ink },
   rowSub: { fontFamily: Fonts.body400, fontSize: 12, color: Colors.sub, marginTop: 1 },
   divider: { height: 1, backgroundColor: Colors.hairline, marginLeft: 60 },
-  soon: { fontFamily: Fonts.body400, fontSize: 12, color: Colors.faint },
   footer: { fontFamily: Fonts.body400, fontSize: 11.5, color: Colors.faint, textAlign: 'center', marginTop: 16 },
 });

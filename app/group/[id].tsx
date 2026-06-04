@@ -9,6 +9,7 @@ import Svg, { Path } from 'react-native-svg';
 import { Colors } from '@/constants/colors';
 import { Fonts } from '@/constants/fonts';
 import { fmt } from '@/lib/format';
+import { HistoryItem } from '@/hooks/useGroupDetail';
 import { useGroupDetail, GroupMember, GroupBalance, GroupExpense } from '@/hooks/useGroupDetail';
 import { useAuthStore } from '@/store/auth';
 import { AddExpenseSheet } from '@/components/ui/AddExpenseSheet';
@@ -45,7 +46,7 @@ function BalanceRow({ b, uid }: { b: GroupBalance; uid: string }) {
   const label = toYou
     ? `${b.from_name} должен вам`
     : fromYou
-    ? `Вы должны ${b.to_name}`
+    ? `вы должны ${b.to_name}`
     : `${b.from_name} → ${b.to_name}`;
   const color = toYou ? Colors.pos : fromYou ? Colors.neg : Colors.sub;
 
@@ -65,6 +66,50 @@ function BalanceRow({ b, uid }: { b: GroupBalance; uid: string }) {
           <Text style={st.sbpText}>СБП</Text>
         </TouchableOpacity>
       )}
+    </View>
+  );
+}
+
+function HistoryRow({ item }: { item: HistoryItem }) {
+  const isExpense = item.type === 'expense_added';
+  const isMember  = item.type === 'member_joined';
+  const isCreated = item.type === 'group_created';
+
+  const time = new Date(item.created_at).toLocaleDateString('ru-RU', {
+    day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
+  });
+
+  let icon = '•';
+  let title = '';
+  let sub = time;
+
+  if (isExpense) {
+    const amount = Number(item.payload.amount ?? 0);
+    const title_ = String(item.payload.title ?? 'трата');
+    icon = '−';
+    title = `${title_} · ${fmt(amount, false)}`;
+    sub = `${item.actor_name} · ${time}`;
+  } else if (isMember) {
+    icon = '★';
+    title = `${item.actor_name} вступил в группу`;
+    sub = time;
+  } else if (isCreated) {
+    icon = '★';
+    title = 'группа создана';
+    sub = time;
+  } else {
+    title = item.type;
+  }
+
+  return (
+    <View style={st.histRow}>
+      <View style={[st.histIcon, isExpense && st.histIconExp, isMember && st.histIconMem]}>
+        <Text style={[st.histIconText, isExpense && st.histIconTextExp]}>{icon}</Text>
+      </View>
+      <View style={{ flex: 1, minWidth: 0 }}>
+        <Text style={st.histTitle} numberOfLines={1}>{title}</Text>
+        <Text style={st.histSub}>{sub}</Text>
+      </View>
     </View>
   );
 }
@@ -177,7 +222,7 @@ export default function GroupDetailScreen() {
             <Text style={[st.sectionTitle, { marginBottom: 12 }]}>кто кому должен</Text>
             <View style={st.card}>
               {group.balances.length === 0 ? (
-                <Text style={st.emptyRow}>Все расчёты завершены 🎉</Text>
+                <Text style={st.emptyRow}>нет расчётов</Text>
               ) : group.balances.map((b, i) => (
                 <View key={`${b.from_user_id}-${b.to_user_id}`}>
                   {i > 0 && <View style={st.divider} />}
@@ -195,6 +240,19 @@ export default function GroupDetailScreen() {
                 <View key={e.id}>
                   {i > 0 && <View style={st.divider} />}
                   <ExpenseRow e={e} />
+                </View>
+              ))}
+            </View>
+
+            {/* ── История ── */}
+            <Text style={[st.sectionTitle, { marginBottom: 12 }]}>история</Text>
+            <View style={[st.card, { marginBottom: 0 }]}>
+              {(group.history ?? []).length === 0 ? (
+                <Text style={st.emptyRow}>нет событий</Text>
+              ) : (group.history ?? []).map((item, i) => (
+                <View key={item.id}>
+                  {i > 0 && <View style={st.divider} />}
+                  <HistoryRow item={item} />
                 </View>
               ))}
             </View>
@@ -230,6 +288,8 @@ export default function GroupDetailScreen() {
             onClose={() => setSettOpen(false)}
             groupId={id ?? ''}
             groupName={group.name}
+            isAdmin={group.members.find(m => m.user_id === uid)?.role === 'admin'}
+            onLeft={() => router.replace('/(tabs)/groups' as any)}
           />
         </>
       ) : null}
@@ -330,6 +390,20 @@ const st = StyleSheet.create({
   expTitle: { fontFamily: Fonts.body600, fontSize: 14, color: Colors.ink },
   expMeta: { fontFamily: Fonts.body400, fontSize: 12, color: Colors.sub, marginTop: 1 },
   expAmt: { fontFamily: Fonts.body700, fontSize: 15, color: Colors.ink },
+
+  // ── History ──
+  histRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, paddingVertical: 12 },
+  histIcon: {
+    width: 30, height: 30, borderRadius: 999, backgroundColor: Colors.surface,
+    alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+    borderWidth: 1, borderColor: Colors.line,
+  },
+  histIconExp: { backgroundColor: Colors.accentSoft, borderColor: Colors.accent },
+  histIconMem: { backgroundColor: '#E6F6EE', borderColor: '#0E9F6E' },
+  histIconText: { fontFamily: Fonts.brand700, fontSize: 13, color: Colors.sub },
+  histIconTextExp: { color: Colors.accent },
+  histTitle: { fontFamily: Fonts.body500, fontSize: 13.5, color: Colors.ink },
+  histSub: { fontFamily: Fonts.body400, fontSize: 11.5, color: Colors.faint, marginTop: 2 },
 
   // ── FAB ──
   fabWrap: {

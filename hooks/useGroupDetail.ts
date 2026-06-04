@@ -28,6 +28,15 @@ export interface GroupExpense {
   date: string;
 }
 
+export interface HistoryItem {
+  id: string;
+  type: string;
+  actor_name: string;
+  payload: Record<string, unknown>;
+  created_at: string;
+  split_count: number;
+}
+
 export interface GroupDetailFull {
   id: string;
   name: string;
@@ -36,6 +45,7 @@ export interface GroupDetailFull {
   members: GroupMember[];
   balances: GroupBalance[];
   expenses: GroupExpense[];
+  history: HistoryItem[];
 }
 
 async function fetchGroupDetail(groupId: string): Promise<GroupDetailFull> {
@@ -56,7 +66,7 @@ async function fetchGroupDetail(groupId: string): Promise<GroupDetailFull> {
     return { user_id: m.user_id, role: m.role, joined_at: m.joined_at, display_name };
   });
 
-  const [{ data: balancesData }, { data: expensesData }] = await Promise.all([
+  const [{ data: balancesData }, { data: expensesData }, { data: activityData }] = await Promise.all([
     supabase
       .from('balances')
       .select('from_user, to_user, amount')
@@ -67,17 +77,52 @@ async function fetchGroupDetail(groupId: string): Promise<GroupDetailFull> {
       .eq('group_id', groupId)
       .order('date', { ascending: false })
       .limit(30),
+    supabase
+      .from('activity')
+      .select('id, type, payload, created_at, actor_id, profiles!actor_id ( display_name )')
+      .eq('group_id', groupId)
+      .order('created_at', { ascending: false })
+      .limit(50),
   ]);
 
-  const balances: GroupBalance[] = (balancesData ?? [])
-    .filter((b: any) => Number(b.amount) > 0)
-    .map((b: any) => ({
-      from_user_id: b.from_user,
-      from_name: memberMap[b.from_user] ?? 'Пользователь',
-      to_user_id: b.to_user,
-      to_name: memberMap[b.to_user] ?? 'Пользователь',
-      amount: Math.round(Number(b.amount) * 100) / 100,
-    }));
+
+  // Debt simplification: net out all pairwise balances, then greedily settle
+  const net: Record<string, number> = {};
+  for (const b of balancesData ?? []) {
+    const amount = Number(b.amount);
+    if (amount <= 0) continue;
+    net[(b as any).from_user] = (net[(b as any).from_user] ?? 0) - amount;
+    net[(b as any).to_user]   = (net[(b as any).to_user]   ?? 0) + amount;
+  }
+  const creditors = Object.entries(net)
+    .filter(([, v]) => v > 0.005)
+    .map(([id, bal]) => ({ id, bal }))
+    .sort((a, b) => b.bal - a.bal);
+  const debtors = Object.entries(net)
+    .filter(([, v]) => v < -0.005)
+    .map(([id, bal]) => ({ id, bal }))
+    .sort((a, b) => a.bal - b.bal);
+
+  const balances: GroupBalance[] = [];
+  let ci = 0, di = 0;
+  while (ci < creditors.length && di < debtors.length) {
+    const c = creditors[ci];
+    const d = debtors[di];
+    const amount = Math.min(c.bal, -d.bal);
+    if (amount > 0.005) {
+      balances.push({
+        from_user_id: d.id,
+        from_name: memberMap[d.id] ?? 'Пользователь',
+        to_user_id: c.id,
+        to_name: memberMap[c.id] ?? 'Пользователь',
+        amount: Math.round(amount * 100) / 100,
+      });
+    }
+    c.bal -= amount;
+    d.bal += amount;
+    if (c.bal < 0.005) ci++;
+    if (d.bal > -0.005) di++;
+  }
 
   const expenses: GroupExpense[] = (expensesData ?? []).map((e: any) => ({
     id: e.id,
@@ -88,6 +133,15 @@ async function fetchGroupDetail(groupId: string): Promise<GroupDetailFull> {
     date: e.date,
   }));
 
+  const history: HistoryItem[] = (activityData ?? []).map((a: any) => ({
+    id: a.id,
+    type: a.type,
+    actor_name: a.profiles?.display_name ?? 'Пользователь',
+    payload: a.payload ?? {},
+    created_at: a.created_at,
+    split_count: 0,
+  }));
+
   return {
     id: data.id,
     name: data.name,
@@ -96,6 +150,7 @@ async function fetchGroupDetail(groupId: string): Promise<GroupDetailFull> {
     members,
     balances,
     expenses,
+    history,
   };
 }
 
@@ -120,6 +175,7 @@ export function useGroupDetail(groupId: string) {
             created_at: new Date().toISOString(),
             members: [{ user_id: 'local', role: 'admin', joined_at: new Date().toISOString(), display_name: 'Dev' }],
             balances: [],
+            history: [],
             expenses: (local.expenses ?? []).map(e => ({
               id: e.id,
               title: e.title,

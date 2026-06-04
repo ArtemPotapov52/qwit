@@ -40,6 +40,7 @@ function GroupRow({ g, scale }: { g: GroupItem; scale: number }) {
 }
 
 export default function GroupsScreen() {
+  const router = useRouter();
   const { user } = useAuthStore();
   const { fontScale } = useSettingsStore();
   const { data: profile } = useProfile();
@@ -55,7 +56,9 @@ export default function GroupsScreen() {
       {/* Header */}
       <View style={s.header}>
         <Text style={[s.headerTitle, { fontSize: fs(24, fontScale) }]}>qwit</Text>
-        <View style={s.avatar}><Text style={s.avatarText}>{letter}</Text></View>
+        <TouchableOpacity style={s.avatar} onPress={() => router.navigate('/(tabs)/profile' as any)} activeOpacity={0.7}>
+          <Text style={s.avatarText}>{letter}</Text>
+        </TouchableOpacity>
       </View>
       <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
         {/* Hero */}
