@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, ActivityIndicator,
-  ScrollView, PanResponder, Animated, LayoutAnimation, UIManager, Platform,
+  ScrollView, LayoutAnimation, UIManager, Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -20,15 +20,13 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-const CARD_HEIGHT = 72; // approx card height + gap
-
 export default function GroupsScreen() {
   const router = useRouter();
   const { user } = useAuthStore();
   const { fontScale } = useSettingsStore();
   const { data: profile } = useProfile();
   const { data: rawGroups, isLoading } = useGroups();
-  const { order, pinned, loaded, load, setOrder, togglePin, applyToGroups } = useGroupOrderStore();
+  const { pinned, loaded, load, togglePin, applyToGroups } = useGroupOrderStore();
   const letter = (profile?.display_name ?? user?.email ?? 'Я')[0]?.toUpperCase() ?? 'Я';
 
   useEffect(() => { if (!loaded) load(); }, [loaded]);
@@ -39,73 +37,18 @@ export default function GroupsScreen() {
   const totalOwe  = (rawGroups ?? []).reduce((s, g) => g.amount < 0 ? s + g.amount : s, 0);
   const net = totalOwed + totalOwe;
 
-  // ── Drag state ──
-  const [draggingId, setDraggingId] = useState<string | null>(null);
-  const [draggingIndex, setDraggingIndex] = useState<number>(-1);
-  const [hoverIndex, setHoverIndex] = useState<number>(-1);
-  const dragY = useRef(new Animated.Value(0)).current;
-  const dragStartY = useRef(0);
-  const currentDragY = useRef(0);
-
-  const startDrag = (id: string, index: number) => {
-    setDraggingId(id);
-    setDraggingIndex(index);
-    setHoverIndex(index);
-    dragY.setValue(0);
-    currentDragY.current = 0;
-  };
-
-  const makePanResponder = (id: string, index: number) =>
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => false,
-      onMoveShouldSetPanResponder: (_, gs) => Math.abs(gs.dy) > 5,
-      onPanResponderGrant: () => {
-        dragStartY.current = 0;
-        startDrag(id, index);
-      },
-      onPanResponderMove: (_, gs) => {
-        dragY.setValue(gs.dy);
-        currentDragY.current = gs.dy;
-        const newIndex = Math.min(
-          Math.max(0, Math.round(index + gs.dy / CARD_HEIGHT)),
-          groups.length - 1
-        );
-        if (newIndex !== hoverIndex) setHoverIndex(newIndex);
-      },
-      onPanResponderRelease: () => {
-        if (draggingId) {
-          const newIndex = Math.min(
-            Math.max(0, Math.round(index + currentDragY.current / CARD_HEIGHT)),
-            groups.length - 1
-          );
-          LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-          const newOrder = [...groups.map(g => g.id)];
-          const [moved] = newOrder.splice(index, 1);
-          newOrder.splice(newIndex, 0, moved);
-          setOrder(newOrder);
-        }
-        dragY.setValue(0);
-        setDraggingId(null);
-        setDraggingIndex(-1);
-        setHoverIndex(-1);
-      },
-      onPanResponderTerminate: () => {
-        dragY.setValue(0);
-        setDraggingId(null);
-        setDraggingIndex(-1);
-        setHoverIndex(-1);
-      },
+  const handleTogglePin = (id: string) => {
+    LayoutAnimation.configureNext({
+      duration: 350,
+      create: { type: 'easeInEaseOut', property: 'opacity' },
+      update: { type: 'spring', springDamping: 0.7 },
+      delete: { type: 'easeInEaseOut', property: 'opacity' },
     });
-
-  // Cache pan responders (recreate when groups change)
-  const panResponders = useRef<ReturnType<typeof PanResponder.create>[]>([]);
-  useEffect(() => {
-    panResponders.current = groups.map((g, i) => makePanResponder(g.id, i));
-  }, [groups.map(g => g.id).join(',')]);
+    togglePin(id);
+  };
 
   return (
     <SafeAreaView style={s.container} edges={['top']}>
-      {/* Header */}
       <View style={s.header}>
         <Text style={[s.headerTitle, { fontSize: fs(24, fontScale) }]}>qwit</Text>
         <TouchableOpacity style={s.avatar} onPress={() => router.navigate('/(tabs)/profile' as any)} activeOpacity={0.7}>
@@ -113,11 +56,7 @@ export default function GroupsScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView
-        contentContainerStyle={s.scroll}
-        showsVerticalScrollIndicator={false}
-        scrollEnabled={!draggingId}
-      >
+      <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
         {/* Hero */}
         <View style={[s.hero, s.heroShadow]}>
           <Text style={s.heroLabel}>{net >= 0 ? 'ИТОГО ВАМ ДОЛЖНЫ' : 'ИТОГО ВЫ ДОЛЖНЫ'}</Text>
@@ -134,12 +73,8 @@ export default function GroupsScreen() {
           </View>
         </View>
 
-        {/* Section header */}
         <View style={s.sectionHeader}>
           <Text style={[s.sectionTitle, { fontSize: fs(18, fontScale) }]}>ваши группы</Text>
-          {groups.length > 0 && (
-            <Text style={s.sectionHint}>удержи чтобы переставить</Text>
-          )}
         </View>
 
         {isLoading ? (
@@ -150,74 +85,51 @@ export default function GroupsScreen() {
           </View>
         ) : (
           <View style={s.list}>
-            {groups.map((g, i) => {
+            {groups.map((g) => {
               const meta = CAT_META[g.cat] ?? CAT_META['home'];
-              const isDragging = draggingId === g.id;
-              const isHover = hoverIndex === i && draggingId !== null && draggingId !== g.id;
               const isPinned = pinned.includes(g.id);
-              const pr = panResponders.current[i];
-
               return (
-                <Animated.View
+                <TouchableOpacity
                   key={g.id}
-                  style={[
-                    s.cardWrap,
-                    isDragging && {
-                      transform: [{ translateY: dragY }],
-                      zIndex: 999,
-                      elevation: 12,
-                    },
-                    isHover && s.cardHoverGap,
-                  ]}
-                  {...(pr?.panHandlers ?? {})}
+                  style={s.card}
+                  activeOpacity={0.7}
+                  onPress={() => router.push(`/group/${g.id}` as any)}
                 >
-                  <TouchableOpacity
-                    style={[s.card, isDragging && s.cardDragging]}
-                    activeOpacity={0.7}
-                    onPress={() => { if (!draggingId) router.push(`/group/${g.id}` as any); }}
-                    delayLongPress={300}
-                  >
-                    <View style={[s.catTile, { backgroundColor: meta.bg }]}>
-                      <CatIcon cat={g.cat} color={meta.ink} />
+                  <View style={[s.catTile, { backgroundColor: meta.bg }]}>
+                    <CatIcon cat={g.cat} color={meta.ink} />
+                  </View>
+                  <View style={s.cardInfo}>
+                    <View style={s.cardNameRow}>
+                      {isPinned && (
+                        <Svg width={10} height={10} viewBox="0 0 24 24" fill={Colors.accent} style={{ marginRight: 5, marginTop: 1 }}>
+                          <Path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                        </Svg>
+                      )}
+                      <Text style={[s.cardName, { fontSize: fs(15, fontScale) }]} numberOfLines={1}>{g.name}</Text>
                     </View>
-                    <View style={s.cardInfo}>
-                      <View style={s.cardNameRow}>
-                        {isPinned && (
-                          <Svg width={10} height={10} viewBox="0 0 24 24" fill={Colors.accent} style={{ marginRight: 4, marginTop: 1 }}>
-                            <Path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                          </Svg>
-                        )}
-                        <Text style={[s.cardName, { fontSize: fs(15, fontScale) }]} numberOfLines={1}>{g.name}</Text>
-                      </View>
-                      <Text style={[s.cardLast, { fontSize: fs(12, fontScale) }]} numberOfLines={1}>{g.last}</Text>
+                    <Text style={[s.cardLast, { fontSize: fs(12, fontScale) }]} numberOfLines={1}>{g.last}</Text>
+                  </View>
+                  {g.amount === 0 ? (
+                    <View style={s.amtCol}>
+                      <Text style={[s.amtNum, { color: Colors.faint }]}>0 ₽</Text>
+                      <Text style={s.amtLabel}>рассчитано</Text>
                     </View>
-                    {g.amount === 0 ? (
-                      <View style={s.amtCol}>
-                        <Text style={[s.amtNum, { color: Colors.faint }]}>0 ₽</Text>
-                        <Text style={s.amtLabel}>рассчитано</Text>
-                      </View>
-                    ) : (
-                      <View style={s.amtCol}>
-                        <Text style={[s.amtNum, { color: g.amount > 0 ? Colors.pos : Colors.neg }]}>{fmt(g.amount)}</Text>
-                        <Text style={s.amtLabel}>{g.amount > 0 ? 'вам должны' : 'вы должны'}</Text>
-                      </View>
-                    )}
-                    {/* Pin button */}
-                    <TouchableOpacity
-                      onPress={() => togglePin(g.id)}
-                      hitSlop={12}
-                      style={s.pinBtn}
-                    >
-                      <Svg width={14} height={14} viewBox="0 0 24 24" fill={isPinned ? Colors.accent : 'none'}>
-                        <Path
-                          d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
-                          stroke={isPinned ? Colors.accent : Colors.faint}
-                          strokeWidth={1.8}
-                        />
-                      </Svg>
-                    </TouchableOpacity>
+                  ) : (
+                    <View style={s.amtCol}>
+                      <Text style={[s.amtNum, { color: g.amount > 0 ? Colors.pos : Colors.neg }]}>{fmt(g.amount)}</Text>
+                      <Text style={s.amtLabel}>{g.amount > 0 ? 'вам должны' : 'вы должны'}</Text>
+                    </View>
+                  )}
+                  <TouchableOpacity onPress={() => handleTogglePin(g.id)} hitSlop={12} style={s.pinBtn}>
+                    <Svg width={15} height={15} viewBox="0 0 24 24" fill={isPinned ? Colors.accent : 'none'}>
+                      <Path
+                        d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
+                        stroke={isPinned ? Colors.accent : Colors.faint}
+                        strokeWidth={1.8}
+                      />
+                    </Svg>
                   </TouchableOpacity>
-                </Animated.View>
+                </TouchableOpacity>
               );
             })}
           </View>
@@ -257,26 +169,16 @@ const s = StyleSheet.create({
   heroCol: { flex: 1 },
   heroColLabel: { fontFamily: Fonts.body400, fontSize: 11.5, color: 'rgba(255,255,255,0.82)', marginBottom: 4 },
   heroColNum: { fontFamily: Fonts.body700, fontSize: 17, color: '#fff' },
-  sectionHeader: {
-    flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between',
-    marginTop: 22, marginBottom: 12,
-  },
+  sectionHeader: { marginTop: 22, marginBottom: 12 },
   sectionTitle: { fontFamily: Fonts.brand700, fontSize: 18, color: Colors.ink, letterSpacing: -0.9, textTransform: 'lowercase' },
-  sectionHint: { fontFamily: Fonts.body400, fontSize: 11.5, color: Colors.faint },
   center: { paddingTop: 40, alignItems: 'center' },
   empty: { paddingTop: 40, alignItems: 'center', paddingHorizontal: 24 },
   emptyText: { fontFamily: Fonts.body400, fontSize: 14, color: Colors.sub, textAlign: 'center', lineHeight: 22 },
   list: { gap: 10 },
-  cardWrap: {},
-  cardHoverGap: { marginTop: 16 },
   card: {
     flexDirection: 'row', alignItems: 'center', gap: 12, padding: 13,
     backgroundColor: Colors.surface, borderRadius: 18,
     shadowColor: '#101114', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 2,
-  },
-  cardDragging: {
-    shadowColor: '#101114', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.18, shadowRadius: 24, elevation: 14,
-    backgroundColor: Colors.page,
   },
   catTile: { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   cardInfo: { flex: 1, minWidth: 0, marginRight: 4 },
