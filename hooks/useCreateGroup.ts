@@ -22,20 +22,10 @@ export function useCreateGroup() {
 
       if (!user?.id) throw new Error('Не авторизован');
 
-      // Гарантируем профиль (анонимный пользователь может войти раньше триггера)
-      await supabase.from('profiles').upsert({ id: user.id }, { onConflict: 'id', ignoreDuplicates: true });
-
+      // Используем SECURITY DEFINER функцию — обходит RLS
       const { data: group, error: groupErr } = await supabase
-        .from('groups')
-        .insert({ name, category: cat, created_by: user.id })
-        .select()
-        .single();
+        .rpc('create_group', { p_name: name, p_category: cat, p_user_id: user.id });
       if (groupErr) throw groupErr;
-
-      const { error: memberErr } = await supabase
-        .from('group_members')
-        .insert({ group_id: group.id, user_id: user.id, role: 'admin' });
-      if (memberErr) throw memberErr;
 
       return group;
     },
