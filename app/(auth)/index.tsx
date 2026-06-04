@@ -55,13 +55,21 @@ export default function AuthScreen() {
 
   const handleDevLogin = async () => {
     setLoading(true);
-    const { error } = await supabase.auth.signInAnonymously();
+    setError('');
+    // 1. Пробуем анонимный вход (нужен тоггл в Supabase Auth → Anonymous)
+    const { error: anonErr } = await supabase.auth.signInAnonymously();
+    if (!anonErr) { setLoading(false); return; }
+
+    // 2. Пробуем dev-пользователя email+пароль (нужен Email provider + SQL из README)
+    const { error: passErr } = await supabase.auth.signInWithPassword({
+      email: 'artem@dev.local',
+      password: 'test123',
+    });
     setLoading(false);
-    if (error) {
-      // Anonymous auth не включён — используем локальный мок-режим
-      enterGuestMode();
-    }
-    // Если успех — onAuthStateChange в _layout.tsx сам перекинет на tabs
+    if (!passErr) return;
+
+    // 3. Ни один не сработал — показываем что включить
+    setError('Включи в Supabase: Auth → Providers → Anonymous Sign-ins');
   };
 
   const otpRefs = [
@@ -151,6 +159,7 @@ export default function AuthScreen() {
             : <Text style={s.skipText}>Пропустить →</Text>
           }
         </TouchableOpacity>
+        {error ? <Text style={s.skipError}>{error}</Text> : null}
       </View>
     </View>
   );
@@ -309,6 +318,7 @@ const s = StyleSheet.create({
   resendLink: { fontFamily: Fonts.body600, color: Colors.accent },
   skipBtn: { alignItems: 'center', marginTop: 4 },
   skipText: { fontFamily: Fonts.body400, fontSize: 12.5, color: Colors.faint, textDecorationLine: 'underline' },
+  skipError: { fontFamily: Fonts.body400, fontSize: 12, color: Colors.neg, textAlign: 'center', marginTop: 8 },
 
   // Generic input
   inputWrap: {
