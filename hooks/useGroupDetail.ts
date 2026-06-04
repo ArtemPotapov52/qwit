@@ -73,9 +73,9 @@ async function fetchGroupDetail(groupId: string): Promise<GroupDetailFull> {
       .eq('group_id', groupId),
     supabase
       .from('expenses')
-      .select('id, title, amount, paid_by, date, profiles ( display_name )')
+      .select('id, title, amount, paid_by, date, created_at, profiles ( display_name )')
       .eq('group_id', groupId)
-      .order('date', { ascending: false })
+      .order('created_at', { ascending: false })
       .limit(30),
     supabase
       .from('activity')
