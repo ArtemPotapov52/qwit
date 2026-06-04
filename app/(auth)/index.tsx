@@ -4,6 +4,7 @@ import {
   Platform, ActivityIndicator, StyleSheet,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
+import { useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { Colors } from '@/constants/colors';
 import { Fonts } from '@/constants/fonts';
@@ -51,6 +52,7 @@ export default function AuthScreen() {
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const router = useRouter();
 
   const reset = () => { setEmail(''); setPassword(''); setName(''); setError(''); };
 
@@ -96,7 +98,7 @@ export default function AuthScreen() {
       }
     } catch {}
     setLoading(false);
-    // onAuthStateChange сам перекинет
+    router.replace('/(tabs)/groups' as any);
   };
 
   // ── Welcome ───────────────────────────────────────────────
