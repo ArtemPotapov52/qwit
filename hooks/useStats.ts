@@ -52,28 +52,44 @@ async function fetchStats(userId: string, period: 'month' | 'year'): Promise<Sta
     if (g) groupInfoMap[(m as any).group_id] = { name: g.name, cat: (g.category ?? 'home') as CatKey };
   }
 
-  // Only count the current user's personal share (expense_splits.user_id = me)
-  // This correctly attributes: if Anya paid → only Anya's split counts for Anya
-  const { data: splits, error } = await supabase
-    .from('expense_splits')
-    .select('amount, expenses!inner( date, group_id )')
-    .eq('user_id', userId)
-    .gte('expenses.date', fromDate);
+  // Net spending = what I paid out - reimbursements received
+  // 1. Expenses I paid for (full amount I fronted)
+  const { data: paidExpenses, error } = await supabase
+    .from('expenses')
+    .select('id, group_id, amount')
+    .eq('paid_by', userId)
+    .gte('date', fromDate);
 
   if (error) throw error;
-  if (!splits?.length) {
+  if (!paidExpenses?.length) {
     return { categories: [], groups: [], total: 0, periodLabel, expenseCount: 0 };
+  }
+
+  const paidIds = paidExpenses.map((e: any) => e.id as string);
+
+  // 2. Settled splits by others (reimbursements back to me)
+  const { data: settledSplits } = await supabase
+    .from('expense_splits')
+    .select('expense_id, amount')
+    .in('expense_id', paidIds)
+    .neq('user_id', userId)
+    .eq('settled', true);
+
+  // Reimbursed per expense
+  const reimbursedMap: Record<string, number> = {};
+  for (const s of settledSplits ?? []) {
+    const eid = (s as any).expense_id as string;
+    reimbursedMap[eid] = (reimbursedMap[eid] ?? 0) + Number((s as any).amount);
   }
 
   const groupAmounts: Record<string, number> = {};
   let total = 0;
-  for (const s of splits) {
-    const exp = (s as any).expenses;
-    const gid = exp?.group_id as string;
-    const amt = Number((s as any).amount);
-    if (!gid || !groupInfoMap[gid]) continue;
-    groupAmounts[gid] = (groupAmounts[gid] ?? 0) + amt;
-    total += amt;
+  for (const e of paidExpenses) {
+    const gid = (e as any).group_id as string;
+    if (!groupInfoMap[gid]) continue;
+    const net = Number((e as any).amount) - (reimbursedMap[(e as any).id] ?? 0);
+    groupAmounts[gid] = (groupAmounts[gid] ?? 0) + net;
+    total += net;
   }
 
   const catAmounts: Record<string, number> = {};
@@ -96,7 +112,7 @@ async function fetchStats(userId: string, period: 'month' | 'year'): Promise<Sta
     .sort((a, b) => b.amount - a.amount)
     .slice(0, 5);
 
-  return { categories, groups, total, periodLabel, expenseCount: splits.length };
+  return { categories, groups, total, periodLabel, expenseCount: paidExpenses.length };
 }
 
 export function useStats(period: 'month' | 'year') {

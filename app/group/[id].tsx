@@ -110,12 +110,18 @@ function HistoryRow({ item }: { item: HistoryItem }) {
   let title = '';
   let sub = time;
 
+  const isSettled = item.type === 'expense_settled';
+
   if (isExpense) {
     const amount = Number(item.payload.amount ?? 0);
     const title_ = String(item.payload.title ?? 'трата');
     icon = '−';
     title = `${title_} · ${fmt(amount, false)}`;
     sub = `${item.actor_name} · ${time}`;
+  } else if (isSettled) {
+    icon = '✓';
+    title = `${item.actor_name} закинул долг`;
+    sub = time;
   } else if (isMember) {
     icon = '★';
     title = `${item.actor_name} вступил в группу`;
@@ -130,8 +136,8 @@ function HistoryRow({ item }: { item: HistoryItem }) {
 
   return (
     <View style={st.histRow}>
-      <View style={[st.histIcon, isExpense && st.histIconExp, isMember && st.histIconMem]}>
-        <Text style={[st.histIconText, isExpense && st.histIconTextExp]}>{icon}</Text>
+      <View style={[st.histIcon, isExpense && st.histIconExp, (isMember || isCreated) && st.histIconMem, isSettled && st.histIconSettled]}>
+        <Text style={[st.histIconText, isExpense && st.histIconTextExp, isSettled && st.histIconTextSettled]}>{icon}</Text>
       </View>
       <View style={{ flex: 1, minWidth: 0 }}>
         <Text style={st.histTitle} numberOfLines={1}>{title}</Text>
@@ -434,8 +440,10 @@ const st = StyleSheet.create({
   },
   histIconExp: { backgroundColor: Colors.accentSoft, borderColor: Colors.accent },
   histIconMem: { backgroundColor: '#E6F6EE', borderColor: '#0E9F6E' },
+  histIconSettled: { backgroundColor: '#E6F6EE', borderColor: '#0E9F6E' },
   histIconText: { fontFamily: Fonts.brand700, fontSize: 13, color: Colors.sub },
   histIconTextExp: { color: Colors.accent },
+  histIconTextSettled: { color: '#0E9F6E', fontSize: 11 },
   histTitle: { fontFamily: Fonts.body500, fontSize: 13.5, color: Colors.ink },
   histSub: { fontFamily: Fonts.body400, fontSize: 11.5, color: Colors.faint, marginTop: 2 },
 
