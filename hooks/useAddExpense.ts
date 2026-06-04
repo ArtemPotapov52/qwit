@@ -26,23 +26,14 @@ export function useAddExpense() {
       if (!user?.id) throw new Error('Не авторизован');
 
       const { data: expense, error: expErr } = await supabase
-        .from('expenses')
-        .insert({ group_id: groupId, paid_by: paidById, title: title.trim(), amount })
-        .select()
-        .single();
+        .rpc('add_expense', {
+          p_group_id: groupId,
+          p_title: title.trim(),
+          p_amount: amount,
+          p_paid_by: paidById,
+          p_member_ids: memberIds,
+        });
       if (expErr) throw expErr;
-
-      const share = Math.round((amount / memberIds.length) * 100) / 100;
-      const splits = memberIds.map(uid => ({
-        expense_id: expense.id,
-        user_id: uid,
-        amount: share,
-        settled: false,
-      }));
-      const { error: splitErr } = await supabase.from('expense_splits').insert(splits);
-      if (splitErr) throw splitErr;
-
-      await supabase.rpc('recalculate_balances', { p_group_id: groupId });
 
       return expense;
     },
