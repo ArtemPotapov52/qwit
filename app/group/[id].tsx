@@ -119,8 +119,9 @@ function HistoryRow({ item }: { item: HistoryItem }) {
     title = `${title_} · ${fmt(amount, false)}`;
     sub = `${item.actor_name} · ${time}`;
   } else if (isSettled) {
+    const amt = Number(item.payload.amount ?? 0);
     icon = '✓';
-    title = `${item.actor_name} закинул долг`;
+    title = `${item.actor_name} закинул долг${amt > 0 ? ` (${fmt(amt, false)})` : ''}`;
     sub = time;
   } else if (isMember) {
     icon = '★';
