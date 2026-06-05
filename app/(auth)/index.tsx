@@ -16,6 +16,8 @@ type Step = 'welcome' | 'email' | 'password' | 'name';
 type Mode = 'login' | 'register';
 
 function BackBtn({ onPress }: { onPress: () => void }) {
+  const C = useColors();
+  const s = useMemo(() => makeStyles(C), [C]);
   return (
     <TouchableOpacity onPress={onPress} style={s.backBtn} activeOpacity={0.7}>
       <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
@@ -29,6 +31,8 @@ function BackBtn({ onPress }: { onPress: () => void }) {
 function PrimaryBtn({ label, onPress, disabled, loading }: {
   label: string; onPress: () => void; disabled?: boolean; loading?: boolean;
 }) {
+  const C = useColors();
+  const s = useMemo(() => makeStyles(C), [C]);
   return (
     <TouchableOpacity
       onPress={onPress} disabled={disabled || loading}
