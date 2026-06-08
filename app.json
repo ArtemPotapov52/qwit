@@ -1,15 +1,19 @@
 {
   "expo": {
-    "name": "Qwit",
+    "name": "qwit",
     "slug": "qwit",
     "version": "1.0.0",
     "orientation": "portrait",
     "scheme": "qwit",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.qwit.app"
+      "bundleIdentifier": "com.qwit.app",
+      "infoPlist": {
+        "NSContactsUsageDescription": "Используется для добавления участников группы из телефонной книги",
+        "UIBackgroundModes": ["remote-notification"]
+      }
     },
     "android": {
       "package": "com.qwit.app"
@@ -21,7 +25,16 @@
     "plugins": [
       "expo-router",
       "expo-secure-store",
-      "expo-font"
+      "expo-font",
+      "expo-contacts",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#2F5BEA",
+          "sounds": []
+        }
+      ]
     ],
     "experiments": {}
   }
