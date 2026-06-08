@@ -1,6 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/store/auth';
+import { getMemberPushTokens } from '@/hooks/usePushNotifications';
+import { sendPushNotifications } from '@/lib/notifications';
+import { fmt } from '@/lib/format';
 
 // Телефон участника: сначала profiles.phone, потом auth.users.phone
 export function useRecipientPhone(userId: string | null) {
@@ -52,8 +55,8 @@ export function useSettleDebt() {
   return useMutation({
     mutationFn: async (params: {
       groupId: string;
-      fromMemberId: string;  // group_members.id
-      toMemberId: string;    // group_members.id
+      fromMemberId: string;
+      toMemberId: string;
       amount: number;
       paymentMethod?: string;
     }) => {
@@ -65,6 +68,31 @@ export function useSettleDebt() {
         p_payment_method:  params.paymentMethod ?? 'sbp',
       });
       if (error) throw error;
+
+      // ── Уведомление получателю (кредитору) ──
+      const { data: toMember } = await supabase
+        .from('group_members')
+        .select('user_id')
+        .eq('id', params.toMemberId)
+        .single();
+
+      const toUserId = toMember?.user_id;
+      const currentUser = user;
+
+      if (toUserId && currentUser && toUserId !== currentUser.id) {
+        const tokenMap = await getMemberPushTokens([toUserId]);
+        const token = tokenMap[toUserId];
+        if (token) {
+          const senderName = currentUser.user_metadata?.display_name ?? 'Кто-то';
+          await sendPushNotifications([{
+            to: token,
+            title: 'qwit · перевод получен',
+            body: `${senderName} погасил долг ${fmt(params.amount, false)} ✓`,
+            data: { groupId: params.groupId, type: 'settlement' },
+          }]);
+        }
+      }
+
       return data as string;
     },
     onSuccess: (_, { groupId }) => {

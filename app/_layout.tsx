@@ -19,6 +19,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/store/auth';
 import { useSettingsStore } from '@/store/settings';
+import { usePushNotifications } from '@/hooks/usePushNotifications';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -51,6 +52,7 @@ function AuthGuard() {
 export default function RootLayout() {
   const { loadSettings } = useSettingsStore();
   const queryClientRef = useRef(new QueryClient());
+  usePushNotifications();
 
   useEffect(() => { loadSettings(); }, []);
 
