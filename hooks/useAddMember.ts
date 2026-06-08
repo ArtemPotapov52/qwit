@@ -12,7 +12,6 @@ export function userCodeFromId(id: string): string {
   return (id.split('-').pop() ?? id.slice(-12)).toUpperCase();
 }
 
-// Возвращает до 5 пользователей, чей UUID содержит введённую строку
 export async function searchUsersByPartial(query: string): Promise<FoundUser[]> {
   if (query.trim().length < 3) return [];
   const { data, error } = await supabase
@@ -25,6 +24,7 @@ export async function searchUsersByPartial(query: string): Promise<FoundUser[]> 
   }));
 }
 
+// Добавить зарегистрированного пользователя по его profiles.id
 export function useAddMember(groupId: string) {
   const qc = useQueryClient();
 
@@ -41,7 +41,6 @@ export function useAddMember(groupId: string) {
         throw error;
       }
 
-      // Записываем в ленту
       await supabase
         .from('activity')
         .insert({ group_id: groupId, actor_id: userId, type: 'member_joined', payload: {} });
@@ -50,6 +49,30 @@ export function useAddMember(groupId: string) {
       const uid = useAuthStore.getState().user?.id;
       qc.invalidateQueries({ queryKey: ['group', groupId] });
       qc.invalidateQueries({ queryKey: ['activity', uid] });
+      qc.invalidateQueries({ queryKey: ['groups', uid] });
+    },
+  });
+}
+
+// Добавить гостя (без регистрации) — только имя и опционально телефон
+export function useAddGuestMember(groupId: string) {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ name, phone }: { name: string; phone?: string }) => {
+      const { error } = await supabase
+        .from('group_members')
+        .insert({
+          group_id: groupId,
+          guest_name: name.trim(),
+          guest_phone: phone?.trim() || null,
+          role: 'member',
+        });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      const uid = useAuthStore.getState().user?.id;
+      qc.invalidateQueries({ queryKey: ['group', groupId] });
       qc.invalidateQueries({ queryKey: ['groups', uid] });
     },
   });

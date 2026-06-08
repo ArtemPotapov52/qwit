@@ -8,6 +8,8 @@ import { Fonts } from '@/constants/fonts';
 import { useSettingsStore } from '@/store/settings';
 
 function BackBtn({ onPress }: { onPress: () => void }) {
+  const C = useColors();
+  const s = useMemo(() => makeStyles(C), [C]);
   return (
     <TouchableOpacity onPress={onPress} style={s.backBtn} activeOpacity={0.7}>
       <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
@@ -27,6 +29,8 @@ interface RowProps {
 }
 
 function SettingRow({ icon, tint, label, right, onPress, disabled }: RowProps) {
+  const C = useColors();
+  const s = useMemo(() => makeStyles(C), [C]);
   return (
     <TouchableOpacity
       onPress={onPress}
@@ -161,6 +165,7 @@ export default function SettingsScreen() {
 }
 
 function ChevronIcon() {
+  const C = useColors();
   return (
     <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
       <Path d="M9 6l6 6-6 6" stroke={C.faint} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"/>

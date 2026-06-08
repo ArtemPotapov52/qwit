@@ -139,6 +139,19 @@ export default function ProfileScreen() {
             />
           </View>
 
+          {/* Пригласить друзей */}
+          <TouchableOpacity style={[s.settingRow, s.settingBorder]} activeOpacity={0.7} onPress={() => router.push('/invite' as any)}>
+            <View style={[s.settingIcon, { backgroundColor: '#E8F4FF' }]}>
+              <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+                <Path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="#2F5BEA" strokeWidth={1.8} strokeLinecap="round"/>
+                <Circle cx="9" cy="7" r="4" stroke="#2F5BEA" strokeWidth={1.8} fill="none"/>
+                <Path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" stroke="#2F5BEA" strokeWidth={1.8} strokeLinecap="round"/>
+              </Svg>
+            </View>
+            <Text style={s.settingLabel}>Пригласить друзей</Text>
+            <Chevron />
+          </TouchableOpacity>
+
           {/* СБП */}
           <TouchableOpacity style={[s.settingRow, s.settingBorder]} activeOpacity={0.7} onPress={handlePayments}>
             <View style={[s.settingIcon, { backgroundColor: '#E6F6EE' }]}>

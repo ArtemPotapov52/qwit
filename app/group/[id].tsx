@@ -3,6 +3,7 @@ import {
   View, Text, ScrollView, TouchableOpacity,
   ActivityIndicator, StyleSheet, Alert,
 } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
@@ -17,6 +18,7 @@ import { supabase } from '@/lib/supabase';
 import { AddExpenseSheet } from '@/components/ui/AddExpenseSheet';
 import { AddMemberSheet } from '@/components/ui/AddMemberSheet';
 import { GroupSettingsSheet } from '@/components/ui/GroupSettingsSheet';
+import { SettleSbpSheet } from '@/components/ui/SettleSbpSheet';
 
 function memberLabel(n: number) {
   if (n === 1) return '1 участник';
@@ -29,6 +31,8 @@ function formatDate(iso: string) {
 }
 
 function MemberChip({ m, isYou }: { m: GroupMember; isYou: boolean }) {
+  const C = useColors();
+  const st = useMemo(() => makeStyles(C), [C]);
   const name = m.display_name ?? (isYou ? 'Вы' : 'Участник');
   return (
     <View style={[st.chip, isYou && st.chipYou]}>
@@ -42,12 +46,20 @@ function MemberChip({ m, isYou }: { m: GroupMember; isYou: boolean }) {
   );
 }
 
-function BalanceRow({ b, uid, groupId, onSettled }: {
-  b: GroupBalance; uid: string; groupId: string; onSettled: () => void;
+function BalanceRow({ b, uid, myPhone, groupId, onSettled }: {
+  b: GroupBalance; uid: string; myPhone: string | null; groupId: string; onSettled: () => void;
 }) {
+  const C = useColors();
+  const st = useMemo(() => makeStyles(C), [C]);
+  const [sbpOpen, setSbpOpen] = useState(false);
   const [settling, setSettling] = useState(false);
-  const toYou = b.to_user_id === uid;
+  const [copied, setCopied] = useState(false);
+
+  const toYou   = b.to_user_id   === uid;
   const fromYou = b.from_user_id === uid;
+  // Гость — у него нет user_id
+  const debtorIsGuest = b.from_user_id === null;
+
   const label = toYou
     ? `${b.from_name} должен вам`
     : fromYou
@@ -55,49 +67,92 @@ function BalanceRow({ b, uid, groupId, onSettled }: {
     : `${b.from_name} → ${b.to_name}`;
   const color = toYou ? C.pos : fromYou ? C.neg : C.sub;
 
-  const onSbp = () => {
-    const desc = fromYou
-      ? `Подтвердить перевод ${fmt(b.amount, false)} → ${b.to_name}?`
-      : `Подтвердить, что ${b.from_name} перевёл вам ${fmt(b.amount, false)}?`;
-    Alert.alert('Подтвердить оплату', desc, [
-      { text: 'Отмена', style: 'cancel' },
-      {
-        text: 'Оплачено ✓',
-        onPress: async () => {
-          setSettling(true);
-          const { error } = await supabase.rpc('settle_balance', {
-            p_group_id: groupId,
-            p_from_user: b.from_user_id,
-            p_to_user: b.to_user_id,
-          });
-          setSettling(false);
-          if (error) {
-            Alert.alert('Ошибка', error.message);
-            return;
-          }
-          onSettled();
+  const handleConfirmReceived = () => {
+    Alert.alert(
+      'Подтвердить получение',
+      `${b.from_name} перевёл вам ${fmt(b.amount, false)}?`,
+      [
+        { text: 'Отмена', style: 'cancel' },
+        {
+          text: 'Да, получил ✓',
+          onPress: async () => {
+            setSettling(true);
+            const { error } = await supabase.rpc('settle_balance', {
+              p_group_id:    groupId,
+              p_from_member: b.from_member_id,
+              p_to_member:   b.to_member_id,
+            });
+            setSettling(false);
+            if (error) { Alert.alert('Ошибка', error.message); return; }
+            onSettled();
+          },
         },
-      },
-    ]);
+      ],
+    );
+  };
+
+  // Скопировать запрос оплаты для гостя (без приложения)
+  const handleCopyPaymentRequest = async () => {
+    const phone = myPhone ?? '';
+    const text = phone
+      ? `Переведи ${fmt(b.amount, false)} по СБП на номер ${phone} (qwit)`
+      : `Ты должен мне ${fmt(b.amount, false)} — переведи по СБП (qwit)`;
+    await Clipboard.setStringAsync(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2500);
   };
 
   return (
-    <View style={st.balRow}>
-      <View style={[st.balDot, { backgroundColor: color }]} />
-      <Text style={st.balLabel} numberOfLines={1}>{label}</Text>
-      <Text style={[st.balAmt, { color }]}>{fmt(b.amount, false)}</Text>
-      {(toYou || fromYou) && (
-        <TouchableOpacity onPress={onSbp} style={st.sbpPill} activeOpacity={0.7} disabled={settling}>
-          {settling
-            ? <ActivityIndicator color={C.accent} size="small" style={{ width: 28 }} />
-            : <Text style={st.sbpText}>СБП</Text>}
-        </TouchableOpacity>
+    <>
+      <View style={st.balRow}>
+        <View style={[st.balDot, { backgroundColor: color }]} />
+        <Text style={st.balLabel} numberOfLines={1}>{label}</Text>
+        <Text style={[st.balAmt, { color }]}>{fmt(b.amount, false)}</Text>
+
+        {/* Гость должен мне → скопировать запрос оплаты */}
+        {toYou && debtorIsGuest && (
+          <TouchableOpacity onPress={handleCopyPaymentRequest} style={st.sbpPill} activeOpacity={0.7}>
+            <Text style={st.sbpText}>{copied ? 'Скопировано ✓' : 'Скопировать'}</Text>
+          </TouchableOpacity>
+        )}
+
+        {/* Зарег. пользователь должен мне → вернуть через СБП */}
+        {fromYou && (
+          <TouchableOpacity onPress={() => setSbpOpen(true)} style={st.sbpPill} activeOpacity={0.7}>
+            <Text style={st.sbpText}>Вернуть СБП</Text>
+          </TouchableOpacity>
+        )}
+
+        {/* Я получил деньги → подтвердить */}
+        {toYou && (
+          <TouchableOpacity onPress={handleConfirmReceived} style={[st.sbpPill, { marginLeft: 4 }]} activeOpacity={0.7} disabled={settling}>
+            {settling
+              ? <ActivityIndicator color={C.accent} size="small" style={{ width: 28 }} />
+              : <Text style={st.sbpText}>Получил</Text>}
+          </TouchableOpacity>
+        )}
+      </View>
+      {fromYou && (
+        <SettleSbpSheet
+          open={sbpOpen}
+          onClose={() => setSbpOpen(false)}
+          onSettled={() => { setSbpOpen(false); onSettled(); }}
+          groupId={groupId}
+          fromMemberId={b.from_member_id}
+          toMemberId={b.to_member_id}
+          toUserId={b.to_user_id}
+          toGuestPhone={null}
+          toName={b.to_name}
+          amount={b.amount}
+        />
       )}
-    </View>
+    </>
   );
 }
 
 function HistoryRow({ item }: { item: HistoryItem }) {
+  const C = useColors();
+  const st = useMemo(() => makeStyles(C), [C]);
   const isExpense = item.type === 'expense_added';
   const isMember  = item.type === 'member_joined';
   const isCreated = item.type === 'group_created';
@@ -149,6 +204,8 @@ function HistoryRow({ item }: { item: HistoryItem }) {
 }
 
 function ExpenseRow({ e }: { e: GroupExpense }) {
+  const C = useColors();
+  const st = useMemo(() => makeStyles(C), [C]);
   return (
     <View style={st.expRow}>
       <View style={st.expDot} />
@@ -167,6 +224,7 @@ export default function GroupDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { user } = useAuthStore();
+  const myPhone = user?.phone ?? null;
   const { data: group, isLoading, error } = useGroupDetail(id ?? '');
   const [expOpen, setExpOpen] = useState(false);
   const [memOpen, setMemOpen] = useState(false);
@@ -257,7 +315,7 @@ export default function GroupDetailScreen() {
             </View>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={st.chips}>
               {group.members.map(m => (
-                <MemberChip key={m.user_id} m={m} isYou={m.user_id === uid} />
+                <MemberChip key={m.id} m={m} isYou={m.user_id === uid} />
               ))}
             </ScrollView>
 
@@ -267,9 +325,9 @@ export default function GroupDetailScreen() {
               {group.balances.length === 0 ? (
                 <Text style={st.emptyRow}>нет расчётов</Text>
               ) : group.balances.map((b, i) => (
-                <View key={`${b.from_user_id}-${b.to_user_id}`}>
+                <View key={`${b.from_member_id}-${b.to_member_id}`}>
                   {i > 0 && <View style={st.divider} />}
-                  <BalanceRow b={b} uid={uid} groupId={id ?? ''} onSettled={handleSettled} />
+                  <BalanceRow b={b} uid={uid} myPhone={myPhone} groupId={id ?? ''} onSettled={handleSettled} />
                 </View>
               ))}
             </View>

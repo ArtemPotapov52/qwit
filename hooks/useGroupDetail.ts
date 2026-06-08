@@ -5,16 +5,21 @@ import { useLocalGroupsStore } from '@/store/localGroups';
 import { CatKey } from '@/constants/colors';
 
 export interface GroupMember {
-  user_id: string;
+  id: string;              // group_members.id
+  user_id: string | null;  // profiles.id, null для гостей
   role: string;
   joined_at: string;
   display_name: string | null;
+  is_guest: boolean;
+  guest_phone: string | null;
 }
 
 export interface GroupBalance {
-  from_user_id: string;
+  from_member_id: string;   // group_members.id
+  from_user_id: string | null;
   from_name: string;
-  to_user_id: string;
+  to_member_id: string;     // group_members.id
+  to_user_id: string | null;
   to_name: string;
   amount: number;
 }
@@ -53,23 +58,35 @@ async function fetchGroupDetail(groupId: string): Promise<GroupDetailFull> {
     .from('groups')
     .select(`
       id, name, category, created_at,
-      group_members ( user_id, role, joined_at, profiles ( display_name ) )
+      group_members ( id, user_id, guest_name, guest_phone, role, joined_at, profiles ( display_name ) )
     `)
     .eq('id', groupId)
     .single();
   if (error) throw error;
 
-  const memberMap: Record<string, string> = {};
+  // memberMap ключуется по group_members.id
+  const memberMap: Record<string, { name: string; user_id: string | null }> = {};
   const members: GroupMember[] = ((data as any).group_members ?? []).map((m: any) => {
-    const display_name: string | null = m.profiles?.display_name ?? null;
-    memberMap[m.user_id] = display_name ?? 'Пользователь';
-    return { user_id: m.user_id, role: m.role, joined_at: m.joined_at, display_name };
+    const isGuest = !m.user_id;
+    const display_name: string | null = isGuest
+      ? (m.guest_name ?? 'Гость')
+      : (m.profiles?.display_name ?? null);
+    memberMap[m.id] = { name: display_name ?? 'Участник', user_id: m.user_id ?? null };
+    return {
+      id: m.id,
+      user_id: m.user_id ?? null,
+      role: m.role,
+      joined_at: m.joined_at,
+      display_name,
+      is_guest: isGuest,
+      guest_phone: m.guest_phone ?? null,
+    };
   });
 
   const [{ data: balancesData }, { data: expensesData }, { data: activityData }] = await Promise.all([
     supabase
       .from('balances')
-      .select('from_user, to_user, amount')
+      .select('from_member, to_member, amount')
       .eq('group_id', groupId),
     supabase
       .from('expenses')
@@ -85,14 +102,16 @@ async function fetchGroupDetail(groupId: string): Promise<GroupDetailFull> {
       .limit(50),
   ]);
 
-
-  // Debt simplification: net out all pairwise balances, then greedily settle
+  // Упрощение долгов: net-out попарных балансов, жадное погашение
   const net: Record<string, number> = {};
   for (const b of balancesData ?? []) {
+    const from = (b as any).from_member;
+    const to   = (b as any).to_member;
+    if (!from || !to) continue;
     const amount = Number(b.amount);
     if (amount <= 0) continue;
-    net[(b as any).from_user] = (net[(b as any).from_user] ?? 0) - amount;
-    net[(b as any).to_user]   = (net[(b as any).to_user]   ?? 0) + amount;
+    net[from] = (net[from] ?? 0) - amount;
+    net[to]   = (net[to]   ?? 0) + amount;
   }
   const creditors = Object.entries(net)
     .filter(([, v]) => v > 0.005)
@@ -111,10 +130,12 @@ async function fetchGroupDetail(groupId: string): Promise<GroupDetailFull> {
     const amount = Math.min(c.bal, -d.bal);
     if (amount > 0.005) {
       balances.push({
-        from_user_id: d.id,
-        from_name: memberMap[d.id] ?? 'Пользователь',
-        to_user_id: c.id,
-        to_name: memberMap[c.id] ?? 'Пользователь',
+        from_member_id: d.id,
+        from_user_id: memberMap[d.id]?.user_id ?? null,
+        from_name: memberMap[d.id]?.name ?? 'Участник',
+        to_member_id: c.id,
+        to_user_id: memberMap[c.id]?.user_id ?? null,
+        to_name: memberMap[c.id]?.name ?? 'Участник',
         amount: Math.round(amount * 100) / 100,
       });
     }
@@ -129,14 +150,14 @@ async function fetchGroupDetail(groupId: string): Promise<GroupDetailFull> {
     title: e.title,
     amount: Number(e.amount),
     paid_by_id: e.paid_by ?? null,
-    paid_by_name: (e as any).profiles?.display_name ?? 'Пользователь',
+    paid_by_name: (e as any).profiles?.display_name ?? 'Участник',
     date: e.date,
   }));
 
   const history: HistoryItem[] = (activityData ?? []).map((a: any) => ({
     id: a.id,
     type: a.type,
-    actor_name: a.profiles?.display_name ?? 'Пользователь',
+    actor_name: a.profiles?.display_name ?? 'Участник',
     payload: a.payload ?? {},
     created_at: a.created_at,
     split_count: 0,
@@ -173,7 +194,15 @@ export function useGroupDetail(groupId: string) {
             name: local.name,
             category: local.cat,
             created_at: new Date().toISOString(),
-            members: [{ user_id: 'local', role: 'admin', joined_at: new Date().toISOString(), display_name: 'Dev' }],
+            members: [{
+              id: 'local',
+              user_id: 'local',
+              role: 'admin',
+              joined_at: new Date().toISOString(),
+              display_name: 'Dev',
+              is_guest: false,
+              guest_phone: null,
+            }],
             balances: [],
             history: [],
             expenses: (local.expenses ?? []).map(e => ({
