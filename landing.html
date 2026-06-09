@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QWIT — Совместные расходы без споров</title>
+  <meta name="description" content="Мобильное приложение для учёта совместных трат. Прозрачные балансы, быстрые расчёты.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* ── TOKENS ──────────────────────────── */
+    :root {
+      --bg:        #07070F;
+      --bg-card:   #0D0D1A;
+      --ink:       #EDEEF5;
+      --ink-2:     rgba(237,238,245,0.52);
+      --ink-3:     rgba(237,238,245,0.24);
+      --line-d:    rgba(255,255,255,0.07);
+      --accent:    #5567FF;
+      --accent-lt: rgba(85,103,255,0.14);
+      --accent-bd: rgba(85,103,255,0.28);
+      --glow:      rgba(85,103,255,0.22);
+
+      --cream:     #F6F5F0;
+      --white:     #FFFFFF;
+      --dark:      #08080F;
+      --muted:     #6B6B80;
+      --line-l:    rgba(0,0,0,0.07);
+    }
+
+    /* ── RESET ───────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; font-size: 16px; }
+    body {
+      font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+    a { text-decoration: none; color: inherit; }
+    img, video, svg { display: block; }
+
+    /* ── LAYOUT ──────────────────────────── */
+    .wrap { max-width: 1100px; margin: 0 auto; padding: 0 48px; }
+    @media (max-width: 900px) { .wrap { padding: 0 32px; } }
+    @media (max-width: 600px) { .wrap { padding: 0 20px; } }
+
+    /* ── NAV ─────────────────────────────── */
+    .nav {
+      position: fixed;
+      inset: 0 0 auto;
+      z-index: 200;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 22px 48px;
+      transition: background 0.3s, border-color 0.3s;
+    }
+    .nav.on {
+      background: rgba(7,7,15,0.82);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--line-d);
+    }
+    .nav-logo {
+      font-size: 17px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      color: var(--ink);
+    }
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .nav-link {
+      font-size: 13.5px;
+      font-weight: 500;
+      color: var(--ink-2);
+      padding: 8px 14px;
+      border-radius: 8px;
+      transition: color 0.2s;
+    }
+    .nav-link:hover { color: var(--ink); }
+    .nav-cta {
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--ink);
+      background: var(--accent-lt);
+      border: 1px solid var(--accent-bd);
+      padding: 8px 18px;
+      border-radius: 8px;
+      margin-left: 8px;
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .nav-cta:hover { background: var(--accent); border-color: var(--accent); }
+    @media (max-width: 680px) {
+      .nav { padding: 18px 20px; }
+      .nav-link { display: none; }
+    }
+
+    /* ── HERO ────────────────────────────── */
+    .hero {
+      position: relative;
+      min-height: 100dvh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      padding-top: 96px;
+    }
+    .hero-video-bg {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+    }
+    .hero-video-bg video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center center;
+      filter: blur(6px);
+      transform: scale(1.06);
+    }
+    .hero-overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      background: linear-gradient(
+        to bottom,
+        rgba(7,7,15,0.55) 0%,
+        rgba(7,7,15,0.42) 50%,
+        rgba(7,7,15,0.80) 100%
+      );
+    }
+    .hero-inner {
+      position: relative;
+      z-index: 2;
+      text-align: center;
+      padding: 72px 24px 80px;
+    }
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--accent-lt);
+      border: 1px solid var(--accent-bd);
+      border-radius: 100px;
+      padding: 6px 16px;
+      margin-bottom: 38px;
+      font-size: 12px;
+      font-weight: 500;
+      color: #8fa3ff;
+      letter-spacing: 0.3px;
+    }
+    .hero-badge-dot {
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: #4ADE80;
+      box-shadow: 0 0 8px rgba(74,222,128,0.7);
+      flex-shrink: 0;
+    }
+    .hero-title {
+      font-size: clamp(48px, 8.5vw, 94px);
+      font-weight: 700;
+      color: var(--ink);
+      line-height: 0.96;
+      letter-spacing: -0.045em;
+      margin-bottom: 26px;
+    }
+    .hero-title em {
+      font-style: normal;
+      color: transparent;
+      -webkit-text-stroke: 1.5px rgba(237,238,245,0.30);
+    }
+    .hero-sub {
+      font-size: clamp(16px, 2vw, 18px);
+      font-weight: 400;
+      color: var(--ink-2);
+      line-height: 1.68;
+      max-width: 440px;
+      margin: 0 auto 44px;
+    }
+    .hero-actions {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 80px;
+    }
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--accent);
+      color: #fff;
+      font-family: inherit;
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: -0.2px;
+      padding: 13px 26px;
+      border-radius: 12px;
+      border: none;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.15s;
+    }
+    .btn-primary:hover { opacity: 0.86; transform: translateY(-1px); }
+    .btn-outline {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255,255,255,0.05);
+      color: var(--ink-2);
+      font-family: inherit;
+      font-size: 15px;
+      font-weight: 500;
+      padding: 13px 22px;
+      border-radius: 12px;
+      border: 1px solid var(--line-d);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-outline:hover { background: rgba(255,255,255,0.10); color: var(--ink); }
+
+    /* ── PHONE STAGE ─────────────────────── */
+    .phone-stage {
+      display: flex;
+      justify-content: center;
+      position: relative;
+      padding-bottom: 0;
+    }
+    .phone-glow {
+      position: absolute;
+      width: 500px;
+      height: 380px;
+      background: radial-gradient(ellipse at center,
+        rgba(85,103,255,0.20) 0%,
+        rgba(85,103,255,0.06) 45%,
+        transparent 70%);
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      pointer-events: none;
+      filter: blur(10px);
+    }
+    .phone-frame {
+      position: relative;
+      width: 280px;
+      aspect-ratio: 9 / 19.5;
+      border-radius: 44px;
+      background: linear-gradient(160deg, #0F1128 0%, #080818 60%, #12102A 100%);
+      border: 1.5px solid rgba(255,255,255,0.12);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.09),
+        0 0 0 6px rgba(255,255,255,0.03),
+        0 40px 100px rgba(0,0,0,0.7),
+        0 0 70px var(--glow);
+      overflow: hidden;
+    }
+    .phone-notch {
+      position: absolute;
+      top: 14px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 84px;
+      height: 24px;
+      background: #06060E;
+      border-radius: 18px;
+      z-index: 10;
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+    .phone-frame video {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      z-index: 2;
+    }
+    /* CSS mock app UI — visible when video doesn't load */
+    .phone-ui {
+      position: absolute;
+      inset: 0;
+      padding: 52px 16px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      z-index: 1;
+    }
+    .pui-header {
+      text-align: center;
+      padding: 8px 0 14px;
+    }
+    .pui-logo {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--ink);
+      letter-spacing: -0.5px;
+    }
+    .pui-card {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 16px;
+      padding: 16px;
+    }
+    .pui-card-label {
+      font-size: 9px;
+      font-weight: 500;
+      color: var(--ink-3);
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    .pui-card-amt {
+      font-size: 26px;
+      font-weight: 700;
+      color: #4ADE80;
+      letter-spacing: -0.04em;
+    }
+    .pui-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .pui-row:last-child { border-bottom: none; }
+    .pui-row-left { display: flex; align-items: center; gap: 10px; }
+    .pui-avatar {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: var(--accent-lt);
+      display: grid; place-items: center;
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--accent);
+    }
+    .pui-row-name { font-size: 12px; font-weight: 500; color: var(--ink); }
+    .pui-row-sub  { font-size: 10px; color: var(--ink-3); margin-top: 1px; }
+    .pui-row-amt  { font-size: 12px; font-weight: 600; }
+    .pui-row-amt.pos { color: #4ADE80; }
+    .pui-row-amt.neg { color: #FF6B6B; }
+
+    /* gradient from dark hero to cream — wraps the phone bottom */
+    .hero-bottom {
+      height: 120px;
+      background: linear-gradient(to bottom, var(--bg) 0%, var(--cream) 100%);
+      margin-top: -2px;
+    }
+
+    /* ── STATS ───────────────────────────── */
+    .stats { background: var(--cream); }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      border-top: 1px solid var(--line-l);
+      border-bottom: 1px solid var(--line-l);
+    }
+    @media (max-width: 600px) { .stats-grid { grid-template-columns: 1fr; } }
+    .stat-item {
+      padding: 56px 40px;
+      border-right: 1px solid var(--line-l);
+    }
+    .stat-item:last-child { border-right: none; }
+    @media (max-width: 600px) {
+      .stat-item { border-right: none; border-bottom: 1px solid var(--line-l); padding: 40px 24px; }
+      .stat-item:last-child { border-bottom: none; }
+    }
+    .stat-num {
+      font-size: 60px;
+      font-weight: 700;
+      letter-spacing: -0.05em;
+      color: var(--dark);
+      line-height: 1;
+      margin-bottom: 10px;
+    }
+    .stat-num sup {
+      font-size: 28px;
+      vertical-align: super;
+      line-height: 0;
+      color: var(--accent);
+    }
+    .stat-desc {
+      font-size: 15px;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    /* ── SECTION ATOMS ───────────────────── */
+    .s { padding: 96px 0; }
+    @media (max-width: 768px) { .s { padding: 72px 0; } }
+
+    .s-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 14px;
+    }
+    .s-title {
+      font-size: clamp(30px, 4.2vw, 50px);
+      font-weight: 700;
+      letter-spacing: -0.035em;
+      line-height: 1.06;
+      color: var(--dark);
+      margin-bottom: 16px;
+    }
+    .s-sub {
+      font-size: 17px;
+      color: var(--muted);
+      line-height: 1.70;
+    }
+
+    /* ── PROBLEM ─────────────────────────── */
+    .problem { background: var(--cream); }
+    .problem-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 48px;
+      margin-bottom: 52px;
+    }
+    .problem-head .s-sub { max-width: 340px; flex-shrink: 0; }
+    @media (max-width: 760px) { .problem-head { flex-direction: column; gap: 20px; } }
+
+    .prob-list {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+    }
+    @media (max-width: 720px) { .prob-list { grid-template-columns: 1fr; } }
+
+    .prob-item {
+      background: var(--white);
+      border: 1px solid var(--line-l);
+      border-radius: 16px;
+      padding: 32px 28px 36px;
+    }
+    .prob-num {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--muted);
+      opacity: 0.6;
+      margin-bottom: 20px;
+    }
+    .prob-quote {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--dark);
+      letter-spacing: -0.025em;
+      line-height: 1.38;
+      margin-bottom: 12px;
+    }
+    .prob-text {
+      font-size: 14px;
+      color: var(--muted);
+      line-height: 1.68;
+    }
+
+    /* ── FEATURES (BENTO) ────────────────── */
+    .features { background: var(--white); }
+    .features-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 48px;
+      margin-bottom: 44px;
+    }
+    .features-head .s-sub { max-width: 320px; flex-shrink: 0; }
+    @media (max-width: 760px) { .features-head { flex-direction: column; gap: 20px; } }
+
+    .bento {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 12px;
+    }
+    .bc { grid-column: span 3; }
+    .bs { grid-column: span 2; }
+    @media (max-width: 900px) {
+      .bento { grid-template-columns: repeat(2, 1fr); }
+      .bc, .bs { grid-column: span 1; }
+    }
+    @media (max-width: 500px) {
+      .bento { grid-template-columns: 1fr; }
+    }
+
+    .bento-card {
+      background: var(--cream);
+      border: 1px solid var(--line-l);
+      border-radius: 16px;
+      padding: 28px 24px;
+      transition: transform 0.2s, box-shadow 0.2s;
+      cursor: default;
+    }
+    .bento-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 32px rgba(85,103,255,0.07);
+    }
+    .bento-icon {
+      width: 38px; height: 38px;
+      border-radius: 10px;
+      background: var(--accent-lt);
+      display: grid;
+      place-items: center;
+      margin-bottom: 16px;
+    }
+    .bento-title {
+      font-size: 15.5px;
+      font-weight: 600;
+      color: var(--dark);
+      letter-spacing: -0.025em;
+      margin-bottom: 7px;
+    }
+    .bento-text {
+      font-size: 13.5px;
+      color: var(--muted);
+      line-height: 1.65;
+    }
+
+    /* ── HOW IT WORKS ────────────────────── */
+    .how { background: var(--dark); }
+    .how .s-label { color: var(--ink-3); }
+    .how .s-title { color: var(--ink); }
+    .how-head {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 40px;
+      margin-bottom: 56px;
+    }
+    .how-head .s-sub { color: var(--ink-3); max-width: 300px; }
+    @media (max-width: 760px) {
+      .how-head { flex-direction: column; align-items: flex-start; gap: 20px; }
+    }
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2px;
+      border-radius: 16px;
+      overflow: hidden;
+    }
+    @media (max-width: 680px) { .steps { grid-template-columns: 1fr; border-radius: 12px; } }
+
+    .step { background: #0F0F1C; padding: 44px 36px 48px; }
+    .step-num {
+      font-size: 72px;
+      font-weight: 700;
+      letter-spacing: -0.05em;
+      color: rgba(85,103,255,0.14);
+      line-height: 1;
+      margin-bottom: 24px;
+      font-variant-numeric: tabular-nums;
+    }
+    .step-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--ink);
+      letter-spacing: -0.025em;
+      line-height: 1.32;
+      margin-bottom: 12px;
+    }
+    .step-text {
+      font-size: 14px;
+      color: var(--ink-3);
+      line-height: 1.72;
+    }
+
+    /* ── TECH ────────────────────────────── */
+    .tech { background: var(--cream); }
+    .tech-head {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 40px;
+      margin-bottom: 44px;
+    }
+    .tech-head .s-sub { max-width: 340px; }
+    @media (max-width: 760px) { .tech-head { flex-direction: column; align-items: flex-start; } }
+
+    .tech-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+    @media (max-width: 800px) { .tech-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 420px) { .tech-grid { grid-template-columns: 1fr; } }
+
+    .tech-card {
+      background: var(--white);
+      border: 1px solid var(--line-l);
+      border-radius: 14px;
+      padding: 28px 24px;
+    }
+    .tech-tag {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--muted);
+      opacity: 0.65;
+      margin-bottom: 10px;
+    }
+    .tech-val {
+      font-size: 19px;
+      font-weight: 700;
+      color: var(--dark);
+      letter-spacing: -0.03em;
+      margin-bottom: 8px;
+    }
+    .tech-desc {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.65;
+    }
+
+    /* ── CTA ─────────────────────────────── */
+    .cta-section {
+      background: var(--accent);
+      padding: 100px 0;
+      text-align: center;
+    }
+    .cta-section .s-label { color: rgba(255,255,255,0.42); }
+    .cta-section .s-title { color: #fff; margin-bottom: 14px; }
+    .cta-section .s-sub   { color: rgba(255,255,255,0.58); margin: 0 auto 44px; max-width: 460px; }
+    .btn-white {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: #fff;
+      color: var(--accent);
+      font-family: inherit;
+      font-size: 15px;
+      font-weight: 600;
+      padding: 14px 28px;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.15s;
+    }
+    .btn-white:hover { opacity: 0.90; transform: translateY(-1px); }
+
+    /* ── FOOTER ──────────────────────────── */
+    footer {
+      background: #050509;
+      padding: 36px 0;
+    }
+    .footer-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+    }
+    .footer-logo {
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      color: #fff;
+    }
+    .footer-meta {
+      font-size: 12.5px;
+      color: rgba(255,255,255,0.22);
+      line-height: 1.6;
+      text-align: right;
+    }
+    @media (max-width: 520px) {
+      .footer-inner { flex-direction: column; align-items: flex-start; }
+      .footer-meta { text-align: left; }
+    }
+
+    /* ── REDUCED MOTION ──────────────────── */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { transition-duration: 0.01ms !important; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── NAV ──────────────────────────────── -->
+  <nav class="nav" id="nav" role="navigation" aria-label="Основная навигация">
+    <a href="#" class="nav-logo" aria-label="QWIT — на главную">QWIT</a>
+    <div class="nav-right">
+      <a href="#features" class="nav-link">Возможности</a>
+      <a href="#how" class="nav-link">Как работает</a>
+      <a href="#contact" class="nav-cta">Связаться</a>
+    </div>
+  </nav>
+
+  <!-- ── HERO ─────────────────────────────── -->
+  <div class="hero">
+    <div class="hero-video-bg" aria-hidden="true">
+      <video autoplay muted loop playsinline preload="metadata" poster="assets/icon.png">
+        <source src="assets/hero.mp4" type="video/mp4">
+      </video>
+    </div>
+    <div class="hero-overlay" aria-hidden="true"></div>
+
+    <div class="hero-inner">
+      <div class="hero-badge">
+        <span class="hero-badge-dot" aria-hidden="true"></span>
+        iOS &amp; Android · Скоро
+      </div>
+
+      <h1 class="hero-title">
+        Делите расходы.<br>
+        <em>Без лишних слов.</em>
+      </h1>
+
+      <p class="hero-sub">
+        QWIT — учёт совместных трат в группах. Прозрачные балансы и быстрые расчёты одним нажатием.
+      </p>
+
+      <div class="hero-actions">
+        <a href="#contact" class="btn-primary" role="button">Запросить демо</a>
+        <a href="#features" class="btn-outline" role="button">
+          Возможности
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── STATS ─────────────────────────────── -->
+  <section class="stats" aria-label="Ключевые показатели">
+    <div class="wrap">
+      <div class="stats-grid">
+        <div class="stat-item">
+          <div class="stat-num">0<sup>₽</sup></div>
+          <p class="stat-desc">Лишних споров о том,<br>кто кому должен</p>
+        </div>
+        <div class="stat-item">
+          <div class="stat-num">3<sup>×</sup></div>
+          <p class="stat-desc">Быстрее обычного<br>закрываются долги</p>
+        </div>
+        <div class="stat-item">
+          <div class="stat-num">1<sup>tap</sup></div>
+          <p class="stat-desc">Чтобы обнулить баланс<br>и закрыть расчёты</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── PROBLEM ───────────────────────────── -->
+  <section class="s problem" aria-labelledby="problem-title">
+    <div class="wrap">
+      <div class="problem-head">
+        <div>
+          <p class="s-label" aria-hidden="true">Проблема</p>
+          <h2 class="s-title" id="problem-title">Деньги и дружба —<br>сложное сочетание</h2>
+        </div>
+        <p class="s-sub">Ручные подсчёты, забытые траты и неловкие напоминания разрушают отношения.</p>
+      </div>
+
+      <div class="prob-list" role="list">
+        <div class="prob-item" role="listitem">
+          <p class="prob-num">01</p>
+          <p class="prob-quote">«Кто сколько должен?»</p>
+          <p class="prob-text">После поездки никто точно не помнит итоговый баланс. Ручные подсчёты в заметках и переписках.</p>
+        </div>
+        <div class="prob-item" role="listitem">
+          <p class="prob-num">02</p>
+          <p class="prob-quote">«Где тот чек?»</p>
+          <p class="prob-text">Оплата за такси здесь, покупки там — расходы теряются. Спустя неделю восстановить картину почти невозможно.</p>
+        </div>
+        <div class="prob-item" role="listitem">
+          <p class="prob-num">03</p>
+          <p class="prob-quote">«Неловко напомнить»</p>
+          <p class="prob-text">Просить вернуть долг неудобно. Затяжные расчёты создают напряжение там, где его не должно быть.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── FEATURES (BENTO) ──────────────────── -->
+  <section class="s features" id="features" aria-labelledby="feat-title">
+    <div class="wrap">
+      <div class="features-head">
+        <div>
+          <p class="s-label" aria-hidden="true">Возможности</p>
+          <h2 class="s-title" id="feat-title">Всё для честных<br>расчётов</h2>
+        </div>
+        <p class="s-sub">Простой интерфейс, точные балансы и полная история в одном приложении.</p>
+      </div>
+
+      <div class="bento" role="list">
+
+        <div class="bento-card bc" role="listitem">
+          <div class="bento-icon" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5567FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+              <circle cx="9" cy="7" r="4"/>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+            </svg>
+          </div>
+          <p class="bento-title">Группы расходов</p>
+          <p class="bento-text">Отдельные группы для поездок, аренды, вечеринок. Участники приглашаются из контактов телефона — никаких регистраций.</p>
+        </div>
+
+        <div class="bento-card bc" role="listitem">
+          <div class="bento-icon" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5567FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="1" x2="12" y2="23"/>
+              <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+            </svg>
+          </div>
+          <p class="bento-title">Прозрачные балансы</p>
+          <p class="bento-text">Кто кому должен и на какую сумму — обновляется мгновенно. Никаких ручных вычислений и разночтений.</p>
+        </div>
+
+        <div class="bento-card bs" role="listitem">
+          <div class="bento-icon" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5567FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="9 11 12 14 22 4"/>
+              <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+            </svg>
+          </div>
+          <p class="bento-title">Быстрые расчёты</p>
+          <p class="bento-text">Закрывайте долги одним нажатием. Все участники видят изменения в реальном времени.</p>
+        </div>
+
+        <div class="bento-card bs" role="listitem">
+          <div class="bento-icon" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5567FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+            </svg>
+          </div>
+          <p class="bento-title">Статистика</p>
+          <p class="bento-text">Аналитика за месяц и год. Разбивка по категориям и группам.</p>
+        </div>
+
+        <div class="bento-card bs" role="listitem">
+          <div class="bento-icon" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5567FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="7" width="20" height="14" rx="2"/>
+              <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/>
+              <line x1="12" y1="12" x2="12" y2="16"/>
+              <line x1="10" y1="14" x2="14" y2="14"/>
+            </svg>
+          </div>
+          <p class="bento-title">Категории</p>
+          <p class="bento-text">Жильё, поездки, еда, подарки — структурируйте по смыслу, не по дате.</p>
+        </div>
+
+        <div class="bento-card bs" role="listitem">
+          <div class="bento-icon" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5567FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="16" y1="13" x2="8" y2="13"/>
+              <line x1="16" y1="17" x2="8" y2="17"/>
+            </svg>
+          </div>
+          <p class="bento-title">История</p>
+          <p class="bento-text">Полная лента событий — кто добавил расход, кто закрыл долг.</p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ── HOW IT WORKS ──────────────────────── -->
+  <section class="s how" id="how" aria-labelledby="how-title">
+    <div class="wrap">
+      <div class="how-head">
+        <div>
+          <p class="s-label" aria-hidden="true">Как работает</p>
+          <h2 class="s-title" id="how-title">Три шага до<br>честного расчёта</h2>
+        </div>
+        <p class="s-sub">Создайте группу, вносите расходы и закрывайте долги одним нажатием.</p>
+      </div>
+
+      <div class="steps" role="list">
+        <div class="step" role="listitem">
+          <div class="step-num">01</div>
+          <p class="step-title">Создайте группу и пригласите участников</p>
+          <p class="step-text">Группа под конкретный случай — поездка, аренда, вечеринка. Участники из телефонной книги.</p>
+        </div>
+        <div class="step" role="listitem">
+          <div class="step-num">02</div>
+          <p class="step-title">Вносите расходы в момент оплаты</p>
+          <p class="step-text">Кто заплатил, сколько и за что. QWIT автоматически пересчитывает балансы у всех участников.</p>
+        </div>
+        <div class="step" role="listitem">
+          <div class="step-num">03</div>
+          <p class="step-title">Закройте долг одним нажатием</p>
+          <p class="step-text">Баланс обнулится, вся история операций сохранится. Никаких споров.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── TECH ──────────────────────────────── -->
+  <section class="s tech" id="tech" aria-labelledby="tech-title">
+    <div class="wrap">
+      <div class="tech-head">
+        <div>
+          <p class="s-label" aria-hidden="true">Технологии</p>
+          <h2 class="s-title" id="tech-title">Современный стек,<br>надёжная основа</h2>
+        </div>
+        <p class="s-sub">Безопасность данных и масштабируемость заложены в архитектуре с первого дня.</p>
+      </div>
+      <div class="tech-grid" role="list">
+        <div class="tech-card" role="listitem">
+          <p class="tech-tag">Платформа</p>
+          <p class="tech-val">React Native</p>
+          <p class="tech-desc">iOS и Android из единой кодовой базы. Expo SDK 53, TypeScript strict.</p>
+        </div>
+        <div class="tech-card" role="listitem">
+          <p class="tech-tag">База данных</p>
+          <p class="tech-val">Supabase</p>
+          <p class="tech-desc">PostgreSQL с RLS-политиками. Каждый пользователь видит только свои данные.</p>
+        </div>
+        <div class="tech-card" role="listitem">
+          <p class="tech-tag">Обновления</p>
+          <p class="tech-val">Realtime</p>
+          <p class="tech-desc">Балансы и транзакции обновляются у всех участников без перезагрузки.</p>
+        </div>
+        <div class="tech-card" role="listitem">
+          <p class="tech-tag">Аутентификация</p>
+          <p class="tech-val">Phone OTP</p>
+          <p class="tech-desc">Вход по номеру телефона через SMS. Сессии хранятся в Secure Store.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── CTA ───────────────────────────────── -->
+  <section class="cta-section" id="contact" aria-labelledby="cta-title">
+    <div class="wrap">
+      <p class="s-label" aria-hidden="true">Контакт</p>
+      <h2 class="s-title" id="cta-title">Обсудим сотрудничество</h2>
+      <p class="s-sub">Если вас интересует QWIT как инвестиционная возможность — напишите напрямую.</p>
+      <a href="mailto:hello@qwit.app" class="btn-white">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+          <polyline points="22,6 12,13 2,6"/>
+        </svg>
+        hello@qwit.app
+      </a>
+    </div>
+  </section>
+
+  <!-- ── FOOTER ────────────────────────────── -->
+  <footer>
+    <div class="wrap">
+      <div class="footer-inner">
+        <span class="footer-logo">QWIT</span>
+        <p class="footer-meta">© 2026 QWIT · Все права защищены</p>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    const nav = document.getElementById('nav');
+    const onScroll = () => nav.classList.toggle('on', window.scrollY > 60);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+
+    document.querySelectorAll('a[href^="#"]').forEach(link => {
+      link.addEventListener('click', e => {
+        const target = document.querySelector(link.getAttribute('href'));
+        if (target) {
+          e.preventDefault();
+          const offset = nav.offsetHeight + 12;
+          window.scrollTo({ top: target.getBoundingClientRect().top + window.scrollY - offset, behavior: 'smooth' });
+        }
+      });
+    });
+  </script>
+</body>
+</html>
