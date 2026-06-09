@@ -21,7 +21,34 @@ import { useAuthStore } from '@/store/auth';
 import { useSettingsStore } from '@/store/settings';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 
+// Hermes workaround: never let Error.prototype.stack getter be invoked
+const origConsoleError = console.error;
+console.error = (...args: any[]) => {
+  origConsoleError(...args.map(a =>
+    a instanceof Error ? { message: a.message, name: a.name } : a
+  ));
+};
+if (typeof ErrorUtils !== 'undefined') {
+  const origHandler = ErrorUtils.getGlobalHandler();
+  ErrorUtils.setGlobalHandler((e: any, isFatal?: boolean) => {
+    origHandler(e instanceof Error ? { message: e.message } : e, isFatal);
+  });
+}
+
 SplashScreen.preventAutoHideAsync();
+console.log('[qwit] _layout.tsx loaded');
+
+// Глобальный перехватчик — покажет ТОЧНУЮ причину краша
+const prevHandler = ErrorUtils.getGlobalHandler();
+ErrorUtils.setGlobalHandler((error, isFatal) => {
+  console.log('[qwit] GLOBAL ERROR isFatal=' + isFatal);
+  console.log('[qwit] error type:', typeof error);
+  console.log('[qwit] error keys:', error ? Object.keys(error) : 'null');
+  console.log('[qwit] error message:', error?.message);
+  console.log('[qwit] error stack:', error?.stack);
+  console.log('[qwit] error JSON:', JSON.stringify(error));
+  prevHandler(error, isFatal);
+});
 
 function AuthGuard() {
   const { session, guestMode, loading, setSession } = useAuthStore();
@@ -50,6 +77,7 @@ function AuthGuard() {
 }
 
 export default function RootLayout() {
+  console.log('[qwit] RootLayout render');
   const { loadSettings } = useSettingsStore();
   const queryClientRef = useRef(new QueryClient());
   usePushNotifications();
@@ -76,6 +104,7 @@ export default function RootLayout() {
 
   if (!fontsLoaded) return null;
 
+  console.log('[qwit] fonts loaded, rendering Stack');
   return (
     <QueryClientProvider client={queryClientRef.current}>
       <StatusBar style={darkMode ? 'light' : 'dark'} />

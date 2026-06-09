@@ -33,11 +33,11 @@ function formatDate(iso: string) {
 function MemberChip({ m, isYou }: { m: GroupMember; isYou: boolean }) {
   const C = useColors();
   const st = useMemo(() => makeStyles(C), [C]);
-  const name = m.display_name ?? (isYou ? 'Вы' : 'Участник');
+  const name = m.display_name?.trim() || (isYou ? 'Вы' : 'Участник');
   return (
     <View style={[st.chip, isYou && st.chipYou]}>
       <View style={[st.chipAv, isYou && st.chipAvYou]}>
-        <Text style={[st.chipLtr, isYou && st.chipLtrYou]}>{name[0].toUpperCase()}</Text>
+        <Text style={[st.chipLtr, isYou && st.chipLtrYou]}>{(name[0] ?? '?').toUpperCase()}</Text>
       </View>
       <Text style={[st.chipName, isYou && st.chipNameYou]} numberOfLines={1}>
         {isYou ? 'Вы' : name}

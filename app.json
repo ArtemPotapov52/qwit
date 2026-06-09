@@ -11,8 +11,7 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.qwit.app",
       "infoPlist": {
-        "NSContactsUsageDescription": "Используется для добавления участников группы из телефонной книги",
-        "UIBackgroundModes": ["remote-notification"]
+        "NSContactsUsageDescription": "Используется для добавления участников группы из телефонной книги"
       }
     },
     "android": {

@@ -271,7 +271,7 @@ export function AddMemberSheet({ open, onClose, groupId }: Props) {
                   <View style={s.inputIcon}>
                     {selected ? (
                       <View style={s.selAvatar}>
-                        <Text style={s.selLetter}>{(selected.display_name ?? '?')[0].toUpperCase()}</Text>
+                        <Text style={s.selLetter}>{((selected.display_name?.trim() || '?')[0] ?? '?').toUpperCase()}</Text>
                       </View>
                     ) : (
                       <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
@@ -309,7 +309,7 @@ export function AddMemberSheet({ open, onClose, groupId }: Props) {
                         activeOpacity={0.7}
                       >
                         <View style={s.suggAvatar}>
-                          <Text style={s.suggLetter}>{(u.display_name ?? '?')[0].toUpperCase()}</Text>
+                          <Text style={s.suggLetter}>{((u.display_name?.trim() || '?')[0] ?? '?').toUpperCase()}</Text>
                         </View>
                         <View style={{ flex: 1 }}>
                           <Text style={s.suggName}>{u.display_name ?? 'Без имени'}</Text>

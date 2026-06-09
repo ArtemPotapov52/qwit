@@ -41,7 +41,7 @@ function MemberChips({
       {members.map(m => {
         const isOn = selected.includes(m.id);
         const isYou = m.user_id === currentUserId;
-        const name = m.display_name ?? 'Участник';
+        const name = m.display_name?.trim() || 'Участник';
         return (
           <TouchableOpacity
             key={m.id}
@@ -50,7 +50,7 @@ function MemberChips({
             activeOpacity={0.7}
           >
             <View style={[s.av, isOn && s.avOn]}>
-              <Text style={[s.ltr, isOn && s.ltrOn]}>{(isYou ? 'Я' : name)[0].toUpperCase()}</Text>
+              <Text style={[s.ltr, isOn && s.ltrOn]}>{((isYou ? 'Я' : name)[0] ?? '?').toUpperCase()}</Text>
             </View>
             <Text style={[s.name, isOn && s.nameOn]} numberOfLines={1}>
               {isYou ? 'Я' : name}
@@ -331,7 +331,7 @@ export function AddExpenseSheet({ open, onClose, onCreated, groupId, members }: 
               <Text style={s.label}>кто заплатил</Text>
               <View style={s.memberPicker}>
                 {members.map(m => {
-                  const name = m.display_name ?? 'Участник';
+                  const name = m.display_name?.trim() || 'Участник';
                   const isSelected = m.id === paidById;
                   const isYou = m.user_id === user?.id;
                   return (
@@ -343,7 +343,7 @@ export function AddExpenseSheet({ open, onClose, onCreated, groupId, members }: 
                     >
                       <View style={[s.chipAvatar, isSelected && s.chipAvatarActive]}>
                         <Text style={[s.chipLetter, isSelected && s.chipLetterActive]}>
-                          {(isYou ? 'Я' : name)[0].toUpperCase()}
+                          {((isYou ? 'Я' : name)[0] ?? '?').toUpperCase()}
                         </Text>
                       </View>
                       <Text style={[s.chipName, isSelected && s.chipNameActive]}>

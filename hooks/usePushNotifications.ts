@@ -5,15 +5,20 @@ import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/store/auth';
 
 // Как показывать уведомления когда приложение открыто
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-    shouldShowBanner: true,
-    shouldShowList: true,
-  }),
-});
+// (только если push notifications доступны)
+try {
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowAlert: true,
+      shouldPlaySound: true,
+      shouldSetBadge: true,
+      shouldShowBanner: true,
+      shouldShowList: true,
+    }),
+  });
+} catch {
+  console.log('[qwit] push notifications not available');
+}
 
 export function usePushNotifications() {
   const { user } = useAuthStore();
@@ -25,32 +30,29 @@ export function usePushNotifications() {
 }
 
 async function registerForPushNotifications(userId: string) {
-  // Только на реальных устройствах (не симуляторе)
   if (Platform.OS === 'web') return;
-
-  const { status: existing } = await Notifications.getPermissionsAsync();
-  let finalStatus = existing;
-
-  if (existing !== 'granted') {
-    const { status } = await Notifications.requestPermissionsAsync();
-    finalStatus = status;
-  }
-
-  if (finalStatus !== 'granted') return;
-
   try {
+    const { status: existing } = await Notifications.getPermissionsAsync();
+    let finalStatus = existing;
+
+    if (existing !== 'granted') {
+      const { status } = await Notifications.requestPermissionsAsync();
+      finalStatus = status;
+    }
+
+    if (finalStatus !== 'granted') return;
+
     const tokenData = await Notifications.getExpoPushTokenAsync({
       projectId: process.env.EXPO_PUBLIC_PROJECT_ID,
     });
     const token = tokenData.data;
 
-    // Сохраняем токен в профиль
     await supabase
       .from('profiles')
       .update({ push_token: token })
       .eq('id', userId);
-  } catch {
-    // Симулятор или нет projectId — просто пропускаем
+  } catch (e) {
+    console.log('[qwit] push registration skipped:', e);
   }
 }
 
