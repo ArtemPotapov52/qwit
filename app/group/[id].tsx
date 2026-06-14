@@ -77,10 +77,12 @@ function BalanceRow({ b, uid, myPhone, groupId, onSettled }: {
           text: 'Да, получил ✓',
           onPress: async () => {
             setSettling(true);
-            const { error } = await supabase.rpc('settle_balance', {
-              p_group_id:    groupId,
-              p_from_member: b.from_member_id,
-              p_to_member:   b.to_member_id,
+            const { error } = await supabase.rpc('create_settlement', {
+              p_group_id:       groupId,
+              p_from_member:    b.from_member_id,
+              p_to_member:      b.to_member_id,
+              p_amount:         b.amount,
+              p_payment_method: 'sbp',
             });
             setSettling(false);
             if (error) { Alert.alert('Ошибка', error.message); return; }
