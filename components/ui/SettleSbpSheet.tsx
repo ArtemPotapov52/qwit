@@ -4,6 +4,7 @@ import {
   Modal, StyleSheet, Pressable, ActivityIndicator,
   KeyboardAvoidingView, Platform, Alert,
 } from 'react-native';
+import QRCode from 'react-native-qrcode-svg';
 import * as Clipboard from 'expo-clipboard';
 import * as Linking from 'expo-linking';
 import { useColors, ThemeColors } from '@/constants/colors';
@@ -73,6 +74,7 @@ export function SettleSbpSheet({
   const { mutate: settleDebt, isPending: settling } = useSettleDebt();
 
   const [step, setStep] = useState<Step>('phone');
+  const [banksView, setBanksView] = useState<'banks' | 'qr'>('banks');
   const [phoneDigits, setPhoneDigits] = useState('7'); // только цифры, без форматирования
   const [phoneInput, setPhoneInput] = useState('+7'); // отображаемая строка
   const [phoneError, setPhoneError] = useState('');
@@ -84,6 +86,7 @@ export function SettleSbpSheet({
   useEffect(() => {
     if (open) {
       setStep('phone');
+      setBanksView('banks');
       setPhoneDigits('7');
       setPhoneInput('+7');
       setPhoneError('');
@@ -242,34 +245,79 @@ export function SettleSbpSheet({
               </>
             )}
 
-            {/* Шаг 2: выбор банка */}
+            {/* Шаг 2: выбор банка или QR */}
             {step === 'banks' && (
               <>
-                <Text style={s.desc}>
-                  Нажми на свой банк — откроется приложение с номером и суммой{'\n'}
-                  <Text style={[s.desc, { color: C.faint, fontSize: 12 }]}>
-                    Останется только подтвердить перевод
-                  </Text>
-                </Text>
-                <View style={s.bankGrid}>
-                  {BANKS.map(bank => (
-                    <TouchableOpacity
-                      key={bank.bankId}
-                      style={s.bankBtn}
-                      onPress={() => handleBankTap(bank.bankId)}
-                      activeOpacity={0.75}
-                    >
-                      <Text style={s.bankName}>{bank.name}</Text>
-                    </TouchableOpacity>
-                  ))}
+                {/* Переключатель Банки / QR */}
+                <View style={s.tabRow}>
+                  <TouchableOpacity
+                    style={[s.tab, banksView === 'banks' && s.tabActive]}
+                    onPress={() => setBanksView('banks')}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[s.tabText, banksView === 'banks' && s.tabTextActive]}>Банки</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[s.tab, banksView === 'qr' && s.tabActive]}
+                    onPress={() => setBanksView('qr')}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[s.tabText, banksView === 'qr' && s.tabTextActive]}>QR-код</Text>
+                  </TouchableOpacity>
                 </View>
-                <TouchableOpacity
-                  style={s.fallbackBtn}
-                  onPress={handleFallbackCopy}
-                  activeOpacity={0.7}
-                >
-                  <Text style={s.fallbackText}>Моего банка нет — скопировать данные</Text>
-                </TouchableOpacity>
+
+                {banksView === 'banks' ? (
+                  <>
+                    <Text style={s.desc}>
+                      Нажми на свой банк — откроется приложение с номером и суммой{'\n'}
+                      <Text style={[s.desc, { color: C.faint, fontSize: 12 }]}>
+                        Останется только подтвердить перевод
+                      </Text>
+                    </Text>
+                    <View style={s.bankGrid}>
+                      {BANKS.map(bank => (
+                        <TouchableOpacity
+                          key={bank.bankId}
+                          style={s.bankBtn}
+                          onPress={() => handleBankTap(bank.bankId)}
+                          activeOpacity={0.75}
+                        >
+                          <Text style={s.bankName}>{bank.name}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                    <TouchableOpacity
+                      style={s.fallbackBtn}
+                      onPress={handleFallbackCopy}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={s.fallbackText}>Моего банка нет — скопировать данные</Text>
+                    </TouchableOpacity>
+                  </>
+                ) : (
+                  <>
+                    <Text style={s.desc}>
+                      Отсканируй камерой банковского приложения — номер заполнится автоматически
+                    </Text>
+                    <View style={s.qrWrap}>
+                      <QRCode
+                        value={resolvedPhone ?? '+7'}
+                        size={180}
+                        color={C.ink}
+                        backgroundColor={C.surface}
+                      />
+                      <Text style={s.qrPhone}>{formatPhone(resolvedPhone?.replace(/\D/g, '') ?? '7')}</Text>
+                      <Text style={s.qrAmount}>{fmt(amount, false)}</Text>
+                    </View>
+                    <TouchableOpacity
+                      style={s.fallbackBtn}
+                      onPress={handleFallbackCopy}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={s.fallbackText}>Скопировать номер и сумму</Text>
+                    </TouchableOpacity>
+                  </>
+                )}
               </>
             )}
 
@@ -365,6 +413,22 @@ const makeStyles = (C: ThemeColors) => StyleSheet.create({
     borderWidth: 1, borderColor: C.line,
   },
   fallbackText: { fontFamily: Fonts.body500, fontSize: 14, color: C.sub },
+  tabRow: {
+    flexDirection: 'row', backgroundColor: C.surface,
+    borderRadius: 12, padding: 4, marginBottom: 18, gap: 4,
+  },
+  tab: {
+    flex: 1, paddingVertical: 8, borderRadius: 10, alignItems: 'center',
+  },
+  tabActive: { backgroundColor: C.page, shadowColor: '#101114', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4, elevation: 2 },
+  tabText: { fontFamily: Fonts.body500, fontSize: 14, color: C.sub },
+  tabTextActive: { color: C.ink, fontFamily: Fonts.body700 },
+  qrWrap: {
+    alignItems: 'center', paddingVertical: 20,
+    backgroundColor: C.surface, borderRadius: 18, marginBottom: 16,
+  },
+  qrPhone: { fontFamily: Fonts.body600, fontSize: 16, color: C.ink, marginTop: 16 },
+  qrAmount: { fontFamily: Fonts.body400, fontSize: 13, color: C.sub, marginTop: 4 },
   copiedHint: {
     backgroundColor: C.accentSoft, borderRadius: 12, padding: 14, marginBottom: 16,
   },
